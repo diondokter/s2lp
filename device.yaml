@@ -272,3 +272,309 @@ registers:
         strict_conversion: GpioSelectInput
         start: 3
         end: 8
+  SYNT3:
+    rw_type: rw
+    address: 0x05
+    size_bits: 8
+    reset_value: 0x42
+    fields:
+      PLL_CP_ISEL:
+        type: u8
+        start: 5
+        end: 8
+        description: Set the charge pump current according to the XTAL frequency (see Table 37. Table 34).
+      BS:
+        type: bool
+        start: 4
+        description: |
+          Synthesizer band select. This parameter selects the out-of loop
+          divide factor of the synthesizer:
+          - false: 4, band select factor for high band
+          - true: 8, band select factor for middle band
+          (see Section 5.3.1 RF channel frequency settings).
+      SYNT:
+        type: u8
+        start: 0
+        end: 4
+        description: MSB [27:24] bits of the PLL programmable divider (see Section 5.3.1 RF channel frequency settings).
+  SYNT2:
+    rw_type: rw
+    address: 0x06
+    size_bits: 8
+    reset_value: 0x16
+    description: The [23:16] bits of the PLL programmable divider (see Section 5.3.1 RF channel frequency settings).
+    fields:
+      SYNT:
+        type: u8
+        start: 0
+        end: 8
+        description: The [23:16] bits of the PLL programmable divider (see Section 5.3.1 RF channel frequency settings).
+  SYNT1:
+    rw_type: rw
+    address: 0x07
+    size_bits: 8
+    reset_value: 0x27
+    description: The [15:8] bits of the PLL programmable divider (see Section 5.3.1 RF channel frequency settings).
+    fields:
+      SYNT:
+        type: u8
+        start: 0
+        end: 8
+        description: The [15:8] bits of the PLL programmable divider (see Section 5.3.1 RF channel frequency settings).
+  SYNT0:
+    rw_type: rw
+    address: 0x08
+    size_bits: 8
+    reset_value: 0x62
+    description: LSB [7:0] bits of the PLL programmable divider (see Section 5.3.1 RF channel frequency settings).
+    fields:
+      SYNT:
+        type: u8
+        start: 0
+        end: 8
+        description: LSB [7:0] bits of the PLL programmable divider (see Section 5.3.1 RF channel frequency settings).
+  IF_OFFSET_ANA:
+    rw_type: rw
+    address: 0x09
+    size_bits: 8
+    reset_value: 0x2A
+    description: "Intermediate frequency setting for the analog RF synthesizer, default: 300 kHz, see Eq. (15)."
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  IF_OFFSET_DIG:
+    rw_type: rw
+    address: 0x0A
+    size_bits: 8
+    reset_value: 0xB8
+    description: "Intermediate frequency setting for the digital shift-to-baseband circuits, default: 300 kHz, see Eq. (15)."
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  ChSpace:
+    rw_type: rw
+    address: 0x0C
+    size_bits: 8
+    reset_value: 0x3F
+    description: "Channel spacing setting, see Eq. (16)."
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  ChNum:
+    rw_type: rw
+    address: 0x0D
+    size_bits: 8
+    reset_value: 0x00
+    description: "Channel number. This value is multiplied by the channel spacing
+      and added to the synthesizer base frequency to generate the
+      actual RF carrier frequency, see Eq. (16)."
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  MOD4:
+    rw_type: rw
+    address: 0x0E
+    size_bits: 8
+    reset_value: 0x83
+    description: "The MSB of the mantissa value of the data rate equation, see Eq. (14)."
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  MOD3:
+    rw_type: rw
+    address: 0x0F
+    size_bits: 8
+    reset_value: 0x2B
+    description: "The LSB of the mantissa value of the data rate equation, see Eq. (14)."
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  MOD2:
+    rw_type: rw
+    address: 0x10
+    size_bits: 8
+    reset_value: 0x77
+    fields:
+      ModulationType:
+        type: u8
+        start: 4
+        end: 8
+        strict_conversion:
+          FSK2:
+            value: 0
+            description: 2-FSK
+          FSK4:
+            value: 1
+            description: 4-FSK
+          GFSK2BT1:
+            value: 2
+            description: 2-GFSK BT=1
+          GFSK4BT1:
+            value: 3
+            description: 4-GFSK BT=1
+          AskOok:
+            value: 5
+            description: ASK/OOK
+          Unmodulated:
+            value: 7
+            description: Unmodulated
+          GFSK2BT0_5:
+            value: 10
+            description: 2-GFSK BT=0.5
+          GFSK4BT0_5:
+            value: 11
+            description: 4-GFSK BT=0.5
+          illegal:
+            value: catch-all
+            description: Invalid value, do not use
+      DATARATE_E:
+        type: u8
+        start: 0
+        end: 4
+        description: The exponent value of the data rate equation (see Eq. (14) ).
+  MOD1:
+    rw_type: rw
+    address: 0x11
+    size_bits: 8
+    reset_value: 0x03
+    fields:
+      PA_INTERP_EN:
+        type: bool
+        start: 7
+        description: Enable the PA power interpolator (see Section 5.6.1 PA configuration).
+      MOD_INTERP_EN:
+        type: bool
+        start: 6
+        description: Enable frequency interpolator for the GFSK shaping (see Section 5.4.1.1 Gaussian shaping).
+      CONST_MAP:
+        type: u8
+        start: 4
+        end: 6
+        description: "Select the constellation map for 4-(G)FSK or 2-(G)FSK
+          modulations (see Table 41. Constellation mapping 2-(G)FSK and
+          Table 42. Constellation mapping 4-(G)FSK)."
+      FDEV_E:
+        type: u8
+        start: 0
+        end: 4
+        description: "The exponent value of the frequency deviation equation (see Eq. (10))."
+  MOD0:
+    rw_type: rw
+    address: 0x12
+    size_bits: 8
+    reset_value: 0x93
+    description: "The mantissa value of the frequency deviation equation (see Eq. (10))."
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  ChFlt:
+    rw_type: rw
+    address: 0x13
+    size_bits: 8
+    reset_value: 0x23
+    description: "Receiver channel filter"
+    fields:
+      ChFlt_M:
+        type: u8
+        start: 4
+        end: 8
+        description: The mantissa value of the receiver channel filter (see Table 44. Channel filter words).
+      ChFlt_E:
+        type: u8
+        start: 0
+        end: 4
+        description: The exponent value of the receiver channel filter (see Table 44. Channel filter words).
+  AFC2:
+    rw_type: rw
+    address: 0x14
+    size_bits: 8
+    reset_value: 0xC8
+    description: Automatic frequency compensation register 2
+    fields:
+      AFC_FREEZE_ON_SYNC:
+        type: bool
+        start: 7
+        description: Enable the freeze AFC correction upon sync word detection.
+      AFC_ENABLED:
+        type: bool
+        start: 6
+        description: Enable the AFC correction.
+      AFC_MODE:
+        type: u8
+        start: 5
+        end: 6
+        strict_conversion:
+          ClosedOnSlicer: 0
+          ClosedOnSecondConversionStage: default
+  AFC1:
+    rw_type: rw
+    address: 0x15
+    size_bits: 8
+    reset_value: 0x18
+    description: Automatic frequency compensation register 1
+    fields:
+      AFC_FAST_PERIOD:
+        type: u8
+        start: 0
+        end: 8
+  AFC0:
+    rw_type: rw
+    address: 0x16
+    size_bits: 8
+    reset_value: 0x25
+    description: Automatic frequency compensation register 0
+    fields:
+      AFC_FAST_GAIN:
+        type: u8
+        start: 4
+        end: 8
+        description: The AFC loop gain in fast mode (2's log).
+      AFC_SLOW_GAIN:
+        type: u8
+        start: 0
+        end: 4
+        description: The AFC loop gain in slow mode (2's log).
+  RSSI_FLT:
+    rw_type: rw
+    address: 0x17
+    size_bits: 8
+    reset_value: 0xE3
+    description: RSSI filter
+    fields:
+      RSSI_FLT:
+        type: u8
+        start: 4
+        end: 8
+        description: Gain of the RSSI filter.
+      CS_MODE:
+        type: u8
+        start: 2
+        end: 4
+        description: Carrier sense mode (see Section 5.5.8.2 Carrier sense)
+        strict_conversion:
+          StaticCS:
+            value: 0b00
+            description: Static CS
+          DynamicCS6db:
+            value: 0b01
+            description: Dynamic CS with 6dB dynamic threshold
+          DynamicCS12db:
+            value: 0b10
+            description: Dynamic CS with 12dB dynamic threshold
+          DynamicCS18db:
+            value: default # 0b11
+            description: Dynamic CS with 18dB dynamic threshold
