@@ -1,0 +1,8 @@
+[package]
+name = "s2lp"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+device-driver = { git = "https://github.com/diondokter/device-driver.git", version = "0.6.0", features = ["yaml"] }
+num_enum = { version = "0.7.2", default-features = false }

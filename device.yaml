@@ -1,0 +1,274 @@
+buffers:
+  fifo:
+    description: The TX and RX fifo. Writing writes to TX, reading reads from RX.
+    id: 0xFF
+    rw_type: rw
+
+commands:
+  TX:
+    id: 0x60
+    description: |
+      Send the S2-LP to TX state for transmission.
+      Valid from `READY` and `SYNTH_SETUP`.
+  RX:
+    id: 0x61
+    description: |
+      Send the S2-LP to RX state for reception.
+      Valid from `READY` and `SYNTH_SETUP`.
+  READY:
+    id: 0x62
+    description: |
+      Go to READY state.
+      Valid from `STANDBY`, `SLEEP` and `LOCK`.
+  STANDBY:
+    id: 0x63
+    description: |
+      Go to STANDBY state.
+      Valid from `READY` and `SYNTH_SETUP`.
+  SLEEP:
+    id: 0x64
+    description: |
+      Go to SLEEP state.
+      Valid from `READY`, `SYNTH_SETUP` and `WAIT_SLEEP`.
+  LOCK_RX:
+    id: 0x65
+    description: |
+      Go to LOCK state by using the RX configuration of the synthesizer.
+      Valid from `READY` and `SYNTH_SETUP`.
+  LOCK_TX:
+    id: 0x66
+    description: |
+      Go to LOCK state by using the TX configuration of the synthesizer.
+      Valid from `READY` and `SYNTH_SETUP`.
+  ABORT:
+    id: 0x67
+    description: |
+      Exit from TX or RX states and go to READY state.
+      Valid from `TX` and `RX`.
+  LDC_RELOAD:
+    id: 0x68
+    description: |
+      Reload the LDC timer with a pre-programmed value stored in registers.
+      Valid from `ANY`.
+  RESET:
+    id: 0x70
+    description: |
+      Reset the S2-LP state machine and registers values.
+      Valid from `ANY`.
+  FLUSH_RX_FIFO:
+    id: 0x71
+    description: |
+      Clean the RX FIFO.
+      Valid from `ALL`.
+  FLUSH_TX_FIFO:
+    id: 0x72
+    description: |
+      Clean the TX FIFO.
+      Valid from `ALL`.
+  SEQUENCE_UPDATE:
+    id: 0x73
+    description: |
+      Reload the packet sequence counter with the value stored in register.
+      Valid from `ANY`.
+
+register_address_type: u8
+registers:
+  GPIO0_CONF:
+    rw_type: rw
+    address: 0x00
+    size_bits: 8
+    reset_value: 0x0A
+    fields:
+      GPIO_MODE:
+        type: u8
+        strict_conversion:
+          HiZ: 0b00
+          Input: 0b01
+          OutputLowPower: 0b10
+          OutputHighPower: default # 0b11
+        start: 0
+        end: 2
+      GPIO_SELECT_OUTPUT:
+        type: u8
+        strict_conversion:
+          Irq: 
+            value: 0
+            description: nIRQ (interrupt request, active low)
+          POR: 
+            value: 1
+            description: POR inverted (active low)
+          WakeUpTimerExpiration:
+            value: 2
+            description: Wake-up timer expiration. `1` when WUT has expired
+          LowBatteryDetection:
+            value: 3
+            description: Low battery detection. `1` when battery is below threshold setting
+          TxDataInternalClockOutput:
+            value: 4
+            description: TX data internal clock output (TX data are sampled on the rising edge of it)
+          TxStateCommandInfo:
+            value: 5
+            description: TX state outputs a command information coming from the RADIO_TX block
+          FifoAlmostEmpty:
+            value: 6
+            description: TX/RX FIFO almost empty flag
+          FifoAlmostFull:
+            value: 7
+            description: TX/RX FIFO almost full flag
+          RxDataOutput:
+            value: 8
+            description: RX data output
+          RxClockOutput:
+            value: 9
+            description: RX clock output (recovered from received data)
+          RxState:
+            value: 10
+            description: RX state indication. `1` when the S2-LP is transiting in the RX state
+          DeviceNotSleepOrStandby:
+            value: 11
+            description: Device in a state other than SLEEP or STANDBY. `0` when in SLEEP/STANDBY
+          DeviceStandby:
+            value: 12
+            description: Device in STANDBY state
+          AntennaSwitch:
+            value: 13
+            description: Antenna switch signal used for antenna diversity
+          ValidPreableDetected:
+            value: 14
+            description: Valid preamble detected flag
+          SyncWordDetected:
+            value: 15
+            description: Sync word detected flag
+          RssiThreshold:
+            value: 16
+            description: RSSI above threshold (same indication of CS register)
+          Reserved:
+            value: default
+            description: Reserved value
+          TxOrRxMode:
+            value: 18
+            description: TX or RX mode indicator (to enable an external range extender)
+          VDD:
+            value: 19
+            description: VDD (to emulate an additional GPIO of the MCU, programmable by SPI)
+          GND:
+            value: 20
+            description: GND (to emulate an additional GPIO of the MCU, programmable by SPI)
+          ExternalSmps:
+            value: 21
+            description: External SMPS enable signal (active high)
+          DeviceSleep:
+            value: 22
+            description: Device in SLEEP state
+          DeviceReady:
+            value: 23
+            description: Device in READY state
+          DeviceLock:
+            value: 24
+            description: Device in LOCK state
+          WaitingForLockDetector:
+            value: 25
+            description: Device waiting for a high level of the lock-detector output signal
+          TxDataOok:
+            value: 26
+            description: TX_DATA_OOK signal (internal control signal generated in the OOK analog smooth mode)
+          WaitingForReady2:
+            value: 27
+            description: Device waiting for a high level of the READY2 signal from XO
+          WaitingForPmBlockSettling:
+            value: 28
+            description: Device waiting for timer expiration to allow PM block settling
+          WaitingForEndOfVcoCalibration:
+            value: 29
+            description: Device waiting for end of VCO calibration
+          SynthBlockFullCircuitry:
+            value: 30
+            description: Device enables the full circuitry of the SYNTH block
+        start: 3
+        end: 8
+      GPIO_SELECT_INPUT:
+        type: u8
+        strict_conversion:
+          TxCommand: 
+            value: 0
+            description: 1 >> TX command
+          RxCommand: 
+            value: 1
+            description: 1 >> RX command
+          TxDataInput:
+            value: 2
+            description: TX data input for direct modulation
+          Wakeup:
+            value: 3
+            description: Wake-up from external input (sensor output)
+          ExternalClock:
+            value: 4
+            description: External clock @ 34.7 kHz (used for LDC modes timing)
+          NotUsed:
+            value: default
+            description: Not used
+        start: 3
+        end: 8
+  GPIO1_CONF:
+    rw_type: rw
+    address: 0x01
+    size_bits: 8
+    reset_value: 0xA2
+    fields:
+      GPIO_MODE:
+        type: u8
+        strict_conversion: GpioMode
+        start: 0
+        end: 2
+      GPIO_SELECT_OUTPUT:
+        type: u8
+        strict_conversion: GpioSelectOutput
+        start: 3
+        end: 8
+      GPIO_SELECT_INPUT:
+        type: u8
+        strict_conversion: GpioSelectInput
+        start: 3
+        end: 8
+  GPIO2_CONF:
+    rw_type: rw
+    address: 0x02
+    size_bits: 8
+    reset_value: 0xA2
+    fields:
+      GPIO_MODE:
+        type: u8
+        strict_conversion: GpioMode
+        start: 0
+        end: 2
+      GPIO_SELECT_OUTPUT:
+        type: u8
+        strict_conversion: GpioSelectOutput
+        start: 3
+        end: 8
+      GPIO_SELECT_INPUT:
+        type: u8
+        strict_conversion: GpioSelectInput
+        start: 3
+        end: 8
+  GPIO3_CONF:
+    rw_type: rw
+    address: 0x03
+    size_bits: 8
+    reset_value: 0xA2
+    fields:
+      GPIO_MODE:
+        type: u8
+        strict_conversion: GpioMode
+        start: 0
+        end: 2
+      GPIO_SELECT_OUTPUT:
+        type: u8
+        strict_conversion: GpioSelectOutput
+        start: 3
+        end: 8
+      GPIO_SELECT_INPUT:
+        type: u8
+        strict_conversion: GpioSelectInput
+        start: 3
+        end: 8
