@@ -91,10 +91,10 @@ registers:
       GPIO_SELECT_OUTPUT:
         type: u8
         strict_conversion:
-          Irq: 
+          Irq:
             value: 0
             description: nIRQ (interrupt request, active low)
-          POR: 
+          POR:
             value: 1
             description: POR inverted (active low)
           WakeUpTimerExpiration:
@@ -189,10 +189,10 @@ registers:
       GPIO_SELECT_INPUT:
         type: u8
         strict_conversion:
-          TxCommand: 
+          TxCommand:
             value: 0
             description: 1 >> TX command
-          RxCommand: 
+          RxCommand:
             value: 1
             description: 1 >> RX command
           TxDataInput:
@@ -371,7 +371,8 @@ registers:
     address: 0x0D
     size_bits: 8
     reset_value: 0x00
-    description: "Channel number. This value is multiplied by the channel spacing
+    description:
+      "Channel number. This value is multiplied by the channel spacing
       and added to the synthesizer base frequency to generate the
       actual RF carrier frequency, see Eq. (16)."
     fields:
