@@ -1785,7 +1785,8 @@ registers:
         type: u8
         start: 0
         end: 7
-        description: "Sets the divider ratio (MSB [14:8]) of the rate multiplier (default:
+        description:
+          "Sets the divider ratio (MSB [14:8]) of the rate multiplier (default:
           Fsw=Fdig/4)"
   PM_CONF2:
     rw_type: rw
@@ -1797,5 +1798,495 @@ registers:
         type: u8
         start: 0
         end: 8
-        description: "Sets the divider ratio (LSB [7:0]) of the rate multiplier (default:
+        description:
+          "Sets the divider ratio (LSB [7:0]) of the rate multiplier (default:
           Fsw=Fdig/4)"
+  PM_CONF1:
+    rw_type: rw
+    address: 0x78
+    size_bits: 8
+    reset_value: 0x39
+    fields:
+      BATTERY_LVL_EN:
+        type: bool
+        start: 6
+        description: Enable battery level detector circuit.
+      SET_BLD_TH:
+        type: u8
+        start: 4
+        end: 6
+        description: Set the battery level detector threshold
+        strict_conversion:
+          v2_7:
+            value: 0b00
+            description: "2.7V"
+          v2_5:
+            value: 0b01
+            description: "2.5V"
+          v2_3:
+            value: 0b10
+            description: "2.3V"
+          v2_1:
+            value: default #0b11
+            description: "2.1V"
+      SMPS_LVL_MODE:
+        type: bool
+        start: 3
+        description: |
+          - 0: SMPS output level depends upon the value written in
+          the PM_CONFIG0 register (SET_SMPS_LEVEL field) both
+          in RX and TX state.
+          - 1: SMPS output level depends upon the value in
+          PM_CONFIG register just in TX state, while in RX state it
+          is fixed to 1.4 V
+      BYPASS_LDO:
+        type: bool
+        start: 2
+        description: Set to 0 (default value)
+  PM_CONF0:
+    rw_type: rw
+    address: 0x79
+    size_bits: 8
+    reset_value: 0x42
+    fields:
+      SET_SMPS_LVL:
+        type: u8
+        start: 4
+        end: 7
+        description: SMPS output voltage
+        conversion:
+          v1_2:
+            value: 0b001
+            description: "1.2V"
+          v1_3:
+            value: 0b010
+            description: "1.3V"
+          v1_4:
+            value: 0b011
+            description: "1.4V"
+          v1_5:
+            value: 0b100
+            description: "1.5V"
+          v1_6:
+            value: 0b101
+            description: "1.6V"
+          v1_7:
+            value: 0b110
+            description: "1.7V"
+          v1_8:
+            value: 0b111
+            description: "1.8V"
+      SLEEP_MODE_SEL:
+        type: u8
+        start: 0
+        end: 1
+        description: "Select whether to retain the fifo in sleep"
+        conversion:
+          without_fifo_retention:
+            value: 0
+            description: Sleep A
+          with_fifo_retention:
+            value: default #1
+            description: Sleep B
+  MC_STATE1:
+    rw_type: ro
+    address: 0x8D
+    size_bits: 8
+    reset_value: 0x52
+    fields:
+      RCO_CAL_OK:
+        type: bool
+        start: 4
+        description: RCO calibration successfully terminated.
+      ANT_SEL:
+        type: bool
+        start: 3
+        description: Currently selected antenna.
+      TX_FIFO_FULL:
+        type: bool
+        start: 2
+        description: TX FIFO is full.
+      RX_FIFO_EMPTY:
+        type: bool
+        start: 1
+        description: RX FIFO is empty.
+      ERROR_LOCK:
+        type: bool
+        start: 0
+        description: RCO calibrator error.
+  MC_STATE0:
+    rw_type: ro
+    address: 0x8E
+    size_bits: 8
+    reset_value: 0x07
+    fields:
+      STATE:
+        type: u8
+        start: 1
+        end: u8
+        description: Current state
+        conversion:
+          STANDBY:
+            value: 0x02
+            description: No wake-up timer active
+          SLEEP_A:
+            value: 0x01
+            description: Wake-up timer active, no FIFO retention
+          SLEEP_B:
+            value: 0x03
+            description: Wake-up timer active, FIFO retention
+          READY:
+            value: 0x00
+            description: Radio in ready state
+          LOCKST:
+            value: 0x14
+            description: Error state due to a failure in LOCK operation
+          LOCKON:
+            value: 0x0C
+            description: High precision LO signal available
+          RX:
+            value: 0x30
+            description: Radio in receiver mode
+          TX:
+            value: 0x5C
+            description: Radio in transmitter mode
+          SYNTH_SETUP:
+            value: 0x50
+            description: Non desirable state reached when a pair
+              of SABORT and RX (or TX) commands
+              are sent during SLEEP state and before
+              sending the READY command
+          WAIT_SLEEP:
+            value: 0x7C
+            description: State entered if, in LDC RX mode, at
+              least one interrupt is generated at the
+              end of the RX cycle
+      XO_ON:
+        type: bool
+        start: 0
+        description: XO is operating.
+  TX_FIFO_STATUS:
+    rw_type: ro
+    address: 0x8F
+    size_bits: 8
+    reset_value: 0x00
+    description: Number of elements in TX FIFO.
+    fields:
+      N_ELEM_TXFIFO:
+        type: u8
+        start: 0
+        end: 8
+        description: Number of elements in TX FIFO.
+  RX_FIFO_STATUS:
+    rw_type: ro
+    address: 0x90
+    size_bits: 8
+    reset_value: 0x00
+    description: Number of elements in RX FIFO.
+    fields:
+      N_ELEM_RXFIFO:
+        type: u8
+        start: 0
+        end: 8
+        description: Number of elements in RX FIFO.
+  RCO_CALIBR_OUT4:
+    rw_type: ro
+    address: 0x94
+    size_bits: 8
+    reset_value: 0x70
+    fields:
+      RWT_OUT:
+        type: u8
+        start: 4
+        end: 8
+        description: RWT word from internal RCO calibrator.
+      RFB_OUT:
+        type: u8
+        start: 0
+        end: 4
+        description: RFB word (MSB [4:1]) from internal RCO calibrator.
+  RCO_CALIBR_OUT3:
+    rw_type: ro
+    address: 0x95
+    size_bits: 8
+    reset_value: 0x00
+    fields:
+      RFB_OUT:
+        type: u8
+        start: 4
+        end: 8
+        description: RFB word (LSB [0]) from internal RCO calibrator.
+  VCO_CALIBR_OUT1:
+    rw_type: ro
+    address: 0x99
+    size_bits: 8
+    reset_value: 0x00
+    fields:
+      VCO_CAL_AMP_OUT:
+        type: u8
+        start: 0
+        end: 4
+        description:
+          VCO magnitude calibration output word (binary coding internally
+          converted from thermometric coding).
+  VCO_CALIBR_OUT0:
+    rw_type: ro
+    address: 0x9A
+    size_bits: 8
+    reset_value: 0x00
+    fields:
+      VCO_CAL_FREQ_OUT:
+        type: u8
+        start: 0
+        end: 7
+        description: VCO Cbank frequency calibration output word (binary coding
+          internally converted from thermometric coding).
+  TX_PCKT_INFO:
+    rw_type: ro
+    address: 0x9C
+    size_bits: 8
+    reset_value: 0x00
+    fields:
+      TX_SEQ_NUM:
+        type: u8
+        start: 4
+        end: 6
+        description: Current TX packet sequence number.
+      N_RETX:
+        type: u8
+        start: 0
+        end: 4
+        description: Number of re-transmissions done for the last TX packet.
+  RX_PCKT_INFO:
+    rw_type: ro
+    address: 0x9D
+    size_bits: 8
+    reset_value: 0x00
+    fields:
+      NACK_RX:
+        type: bool
+        start: 2
+        description: NACK field of the received packet.
+      RX_SEQ_NUM:
+        type: u8
+        start: 0
+        end: 2
+        description: Sequence number of the received packet.
+  AFC_CORR:
+    rw_type: ro
+    address: 0x9E
+    size_bits: 8
+    reset_value: 0x00
+    description: AFC corrected value.
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  LINK_QUALIF2:
+    rw_type: ro
+    address: 0x9F
+    size_bits: 8
+    reset_value: 0x00
+    description: PQI value of the received packet.
+    fields:
+      PQI:
+        type: u8
+        start: 0
+        end: 8
+        description: PQI value of the received packet.
+  LINK_QUALIF1:
+    rw_type: ro
+    address: 0xA0
+    size_bits: 8
+    reset_value: 0x00
+    fields:
+      CS:
+        type: bool
+        start: 7
+        description: Carrier sense indication.
+      SQI:
+        type: u8
+        start: 0
+        end: 7
+        description: SQI value of the received packet.
+  RSSI_LEVEL:
+    rw_type: ro
+    address: 0xA2
+    size_bits: 8
+    reset_value: 0x00
+    description:
+      RSSI level captured at the end of the SYNC word detection of the
+      received packet.
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  RX_PCKT_LEN1:
+    rw_type: ro
+    address: 0xA4
+    size_bits: 8
+    reset_value: 0x00
+    description: MSB [14:8] value of the length of the packet received.
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  RX_PCKT_LEN0:
+    rw_type: ro
+    address: 0xA5
+    size_bits: 8
+    reset_value: 0x00
+    description: LSB [7:0] value of the length of the packet received.
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  CRC_FIELD3:
+    rw_type: ro
+    address: 0xA6
+    size_bits: 8
+    reset_value: 0x00
+    description: CRC field 3 of the received packet.
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  CRC_FIELD2:
+    rw_type: ro
+    address: 0xA7
+    size_bits: 8
+    reset_value: 0x00
+    description: CRC field 2 of the received packet.
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  CRC_FIELD1:
+    rw_type: ro
+    address: 0xA8
+    size_bits: 8
+    reset_value: 0x00
+    description: CRC field 1 of the received packet.
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  CRC_FIELD0:
+    rw_type: ro
+    address: 0xA9
+    size_bits: 8
+    reset_value: 0x00
+    description: CRC field 0 of the received packet.
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  RX_ADDRE_FIELD1:
+    rw_type: ro
+    address: 0xAA
+    size_bits: 8
+    reset_value: 0x00
+    description: Source address field of the received packet.
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  RX_ADDRE_FIELD0:
+    rw_type: ro
+    address: 0xAB
+    size_bits: 8
+    reset_value: 0x00
+    description: Destination address field of the received packet.
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  RSSI_LEVEL_RUN:
+    rw_type: ro
+    address: 0xEF
+    size_bits: 8
+    reset_value: 0x00
+    description:
+      RSSI level of the received packet, which supports continuous fast
+      SPI reading.
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  DEVICE_INFO1:
+    rw_type: ro
+    address: 0xF0
+    size_bits: 8
+    reset_value: 0x03
+    description: S2-LP part number
+    fields:
+      PARTNUM:
+        type: u8
+        start: 0
+        end: 8
+  DEVICE_INFO0:
+    rw_type: ro
+    address: 0xF1
+    size_bits: 8
+    reset_value: 0xC1
+    description: S2-LP version number
+    fields:
+      VERSION:
+        type: u8
+        start: 0
+        end: 8
+  IRQ_STATUS3:
+    rw_type: ro
+    address: 0xFA
+    size_bits: 8
+    reset_value: 0x00
+    description: Interrupt status register 3 [31:24]
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  IRQ_STATUS2:
+    rw_type: ro
+    address: 0xFB
+    size_bits: 8
+    reset_value: 0x09
+    description: Interrupt status register 2 [23:16]
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  IRQ_STATUS1:
+    rw_type: ro
+    address: 0xFC
+    size_bits: 8
+    reset_value: 0x05
+    description: Interrupt status register 1 [15:8]
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  IRQ_STATUS0:
+    rw_type: ro
+    address: 0xFD
+    size_bits: 8
+    reset_value: 0x00
+    description: Interrupt status register 0 [7:0]
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
