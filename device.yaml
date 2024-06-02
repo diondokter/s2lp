@@ -1605,7 +1605,7 @@ registers:
       FIR_EN:
         type: bool
         start: 1
-        description: Enable FIR (see Section 5.4.2.1 OOK smoothing
+        description: Enable FIR (see Section 5.4.2.1 OOK smoothing)
   PA_CONFIG0:
     rw_type: rw
     address: 0x64
@@ -1659,3 +1659,143 @@ registers:
           khz100:
             value: default #0b11
             description: 100 kHz (data rate 125 kbps)
+  SYNTH_CONFIG2:
+    rw_type: rw
+    address: 0x65
+    size_bits: 8
+    reset_value: 0xD0
+    fields:
+      PLL_PFD_SPLIT_EN:
+        type: bool
+        start: 2
+        description:
+          Enables increased DN current pulses to improve linearization of
+          CP/PFD (see Table 37. Charge pump words).
+  VCO_CONFIG:
+    rw_type: rw
+    address: 0x68
+    size_bits: 8
+    reset_value: 0x03
+    fields:
+      VCO_CALAMP_EXT_SEL:
+        type: bool
+        start: 5
+        description:
+          VCO amplitude calibration is skipped (external amplitude word
+          forced on VCO).
+      VCO_CALFREQ_EXT_SEL:
+        type: bool
+        start: 4
+        description: VCO frequency calibration is skipped (external amplitude
+          word forced on VCO).
+  XO_RCO_CONF1:
+    rw_type: rw
+    address: 0x6C
+    size_bits: 8
+    reset_value: 0x45
+    fields:
+      PD_CLKDIV:
+        type: bool
+        start: 4
+        description:
+          Disable both dividers of digital clock (and reference clock for the
+          SMPS) and IF-ADC clock.
+  XO_RCO_CONF0:
+    rw_type: rw
+    address: 0x6D
+    size_bits: 8
+    reset_value: 0x30
+    fields:
+      EXT_REF:
+        type: u8
+        start: 7
+        end: 8
+        strict_conversion:
+          XO: 0
+          XIN: default #1
+      GM_CONF:
+        type: u8
+        start: 4
+        end: 7
+        description: Set the driver gm of the XO at start up.
+      REFDIV:
+        type: bool
+        start: 3
+        description: Enable the the reference clock divider.
+      EXT_RCO_OSC:
+        type: bool
+        start: 1
+        description: The 34.7 kHz signal must be supplied from any GPIO.
+      RCO_CALIBRATION:
+        type: bool
+        start: 0
+        description: Enable the automatic RCO calibration.
+  RCO_CALIBR_CONF3:
+    rw_type: rw
+    address: 0x6E
+    size_bits: 8
+    reset_value: 0x70
+    fields:
+      RWT_IN:
+        type: u8
+        start: 4
+        end: 8
+        description: RWT word value for the RCO.
+      RFB_IN:
+        type: u8
+        start: 4
+        end: 8
+        description: MSB [4:1] part of RFB word value for RCO.
+  RCO_CALIBR_CONF2:
+    rw_type: rw
+    address: 0x6F
+    size_bits: 8
+    reset_value: 0x4D
+    fields:
+      RWT_IN:
+        type: u8
+        start: 7
+        end: 8
+        description: LSB [0] part of RFB word value for RCO.
+  PM_CONF4:
+    rw_type: rw
+    address: 0x75
+    size_bits: 8
+    reset_value: 0x17
+    fields:
+      EXT_SMPS:
+        type: bool
+        start: 5
+        description: Disable the internal SMPS.
+  PM_CONF3:
+    rw_type: rw
+    address: 0x76
+    size_bits: 8
+    reset_value: 0x20
+    fields:
+      KRM_EN:
+        type: bool
+        start: 7
+        description: |
+          - 0: divider by 4 enabled (SMPS' switching frequency is
+          FSW=Fdig/4)
+          - 1: rate multiplier enabled (SMPS' switching frequency is
+          FSW=KRM*Fdig/(2^15).
+      KRM:
+        type: u8
+        start: 0
+        end: 7
+        description: "Sets the divider ratio (MSB [14:8]) of the rate multiplier (default:
+          Fsw=Fdig/4)"
+  PM_CONF2:
+    rw_type: rw
+    address: 0x77
+    size_bits: 8
+    reset_value: 0x00
+    fields:
+      KRM:
+        type: u8
+        start: 0
+        end: 8
+        description: "Sets the divider ratio (LSB [7:0]) of the rate multiplier (default:
+          Fsw=Fdig/4)"
