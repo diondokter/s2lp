@@ -1923,7 +1923,7 @@ registers:
       STATE:
         type: u8
         start: 1
-        end: u8
+        end: 8
         description: Current state
         conversion:
           STANDBY:
