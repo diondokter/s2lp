@@ -272,20 +272,20 @@ registers:
         strict_conversion: GpioSelectInput
         start: 3
         end: 8
-  SYNT3:
+  SYNT:
     rw_type: rw
     address: 0x05
-    size_bits: 8
-    reset_value: 0x42
+    size_bits: 32
+    reset_value: 0x42162762
     fields:
       PLL_CP_ISEL:
         type: u8
-        start: 5
-        end: 8
+        start: 29
+        end: 32
         description: Set the charge pump current according to the XTAL frequency (see Table 37. Table 34).
       BS:
         type: bool
-        start: 4
+        start: 28
         description: |
           Synthesizer band select. This parameter selects the out-of loop
           divide factor of the synthesizer:
@@ -293,46 +293,10 @@ registers:
           - true: 8, band select factor for middle band
           (see Section 5.3.1 RF channel frequency settings).
       SYNT:
-        type: u8
+        type: u32
         start: 0
-        end: 4
-        description: MSB [27:24] bits of the PLL programmable divider (see Section 5.3.1 RF channel frequency settings).
-  SYNT2:
-    rw_type: rw
-    address: 0x06
-    size_bits: 8
-    reset_value: 0x16
-    description: The [23:16] bits of the PLL programmable divider (see Section 5.3.1 RF channel frequency settings).
-    fields:
-      SYNT:
-        type: u8
-        start: 0
-        end: 8
-        description: The [23:16] bits of the PLL programmable divider (see Section 5.3.1 RF channel frequency settings).
-  SYNT1:
-    rw_type: rw
-    address: 0x07
-    size_bits: 8
-    reset_value: 0x27
-    description: The [15:8] bits of the PLL programmable divider (see Section 5.3.1 RF channel frequency settings).
-    fields:
-      SYNT:
-        type: u8
-        start: 0
-        end: 8
-        description: The [15:8] bits of the PLL programmable divider (see Section 5.3.1 RF channel frequency settings).
-  SYNT0:
-    rw_type: rw
-    address: 0x08
-    size_bits: 8
-    reset_value: 0x62
-    description: LSB [7:0] bits of the PLL programmable divider (see Section 5.3.1 RF channel frequency settings).
-    fields:
-      SYNT:
-        type: u8
-        start: 0
-        end: 8
-        description: LSB [7:0] bits of the PLL programmable divider (see Section 5.3.1 RF channel frequency settings).
+        end: 28
+        description: The PLL programmable divider (see Section 5.3.1 RF channel frequency settings).
   IF_OFFSET_ANA:
     rw_type: rw
     address: 0x09
@@ -383,25 +347,14 @@ registers:
   MOD4:
     rw_type: rw
     address: 0x0E
-    size_bits: 8
+    size_bits: 16
     reset_value: 0x83
-    description: "The MSB of the mantissa value of the data rate equation, see Eq. (14)."
+    description: "The mantissa value of the data rate equation, see Eq. (14)."
     fields:
       value:
-        type: u8
+        type: u16
         start: 0
-        end: 8
-  MOD3:
-    rw_type: rw
-    address: 0x0F
-    size_bits: 8
-    reset_value: 0x2B
-    description: "The LSB of the mantissa value of the data rate equation, see Eq. (14)."
-    fields:
-      value:
-        type: u8
-        start: 0
-        end: 8
+        end: 16
   MOD2:
     rw_type: rw
     address: 0x10
@@ -937,28 +890,17 @@ registers:
         type: bool
         start: 0
         description: Enable the FEC encoding in TX or the Viterbi decoding in RX.
-  PcktLen1:
+  PcktLen:
     rw_type: rw
     address: 0x31
-    size_bits: 8
-    reset_value: 0x00
-    description: MSB of length of packet in bytes.
+    size_bits: 16
+    reset_value: 0x0014
+    description: Length of packet in bytes.
     fields:
       value:
-        type: u8
+        type: u16
         start: 0
-        end: 8
-  PcktLen0:
-    rw_type: rw
-    address: 0x32
-    size_bits: 8
-    reset_value: 0x14
-    description: LSB of length of packet in bytes.
-    fields:
-      value:
-        type: u8
-        start: 0
-        end: 8
+        end: 16
   SYNC3:
     rw_type: rw
     address: 0x33
@@ -1348,29 +1290,14 @@ registers:
   CSMA_CONF3:
     rw_type: rw
     address: 0x4C
-    size_bits: 8
-    reset_value: 0x4C
-    description:
-      "[14:8] MSB part of the seed for the random generator used to apply the
-      CSMA algorithm."
+    size_bits: 16
+    reset_value: 0x4C00
+    description: "The seed for the random generator used to apply the CSMA algorithm."
     fields:
       BU_CNTR_SEED:
-        type: u8
+        type: u16
         start: 0
-        end: 8
-  CSMA_CONF2:
-    rw_type: rw
-    address: 0x4D
-    size_bits: 8
-    reset_value: 0x00
-    description:
-      "[7:0] LSB part of the seed for the random generator used to apply the
-      CSMA algorithm."
-    fields:
-      BU_CNTR_SEED:
-        type: u8
-        start: 0
-        end: 8
+        end: 16
   CSMA_CONF1:
     rw_type: rw
     address: 0x4E
@@ -1403,58 +1330,110 @@ registers:
         start: 0
         end: 3
         description: Max number of back-off cycles.
-  IRQ_MASK3:
+  IRQ_MASK:
     rw_type: rw
     address: 0x50
-    size_bits: 8
-    reset_value: 0x00
-    description:
-      "[31:24] Enable the routing of the interrupt flag on the configured IRQ
-      GPIO."
+    size_bits: 32
+    reset_value: 0x00000000
+    description: "Enable the routing of the interrupt flag on the configured IRQ GPIO."
     fields:
-      value:
-        type: u8
+      RX_DATA_READY:
+        type: bool
         start: 0
-        end: 8
-  IRQ_MASK2:
-    rw_type: rw
-    address: 0x51
-    size_bits: 8
-    reset_value: 0x00
-    description:
-      "[23:16] Enable the routing of the interrupt flag on the configured IRQ
-      GPIO."
-    fields:
-      value:
-        type: u8
-        start: 0
-        end: 8
-  IRQ_MASK1:
-    rw_type: rw
-    address: 0x52
-    size_bits: 8
-    reset_value: 0x00
-    description:
-      "[15:8] Enable the routing of the interrupt flag on the configured IRQ
-      GPIO."
-    fields:
-      value:
-        type: u8
-        start: 0
-        end: 8
-  IRQ_MASK0:
-    rw_type: rw
-    address: 0x53
-    size_bits: 8
-    reset_value: 0x00
-    description:
-      "[7:0] Enable the routing of the interrupt flag on the configured IRQ
-      GPIO."
-    fields:
-      value:
-        type: u8
-        start: 0
-        end: 8
+        description: RX data ready
+      RX_DATA_DISC:
+        type: bool
+        start: 1
+        description: RX data discarded (upon filtering)
+      TX_DATA_SENT:
+        type: bool
+        start: 2
+        description: TX data sent
+      MAX_RE_TX_REACH:
+        type: bool
+        start: 3
+        description: Max. re-TX reached
+      CRC_ERROR:
+        type: bool
+        start: 4
+        description: CRC error
+      TX_FIFO_ERROR:
+        type: bool
+        start: 5
+        description: TX FIFO underflow/overflow error
+      RX_FIFO_ERROR:
+        type: bool
+        start: 6
+        description: RX FIFO underflow/overflow error
+      TX_FIFO_ALMOST_FULL:
+        type: bool
+        start: 7
+        description: TX FIFO almost full
+      TX_FIFO_ALMOST_EMPTY:
+        type: bool
+        start: 8
+        description: TX FIFO almost empty
+      RX_FIFO_ALMOST_FULL:
+        type: bool
+        start: 9
+        description: RX FIFO almost full
+      RX_FIFO_ALMOST_EMPTY:
+        type: bool
+        start: 10
+        description: RX FIFO almost empty
+      MAX_BO_CCA_REACH:
+        type: bool
+        start: 11
+        description: Max. number of back-off during CCA
+      VALID_PREAMBLE:
+        type: bool
+        start: 12
+        description: Valid preamble detected
+      VALID_SYNC:
+        type: bool
+        start: 13
+        description: Sync word detected
+      RSSI_ABOVE_TH:
+        type: bool
+        start: 14
+        description: RSSI above threshold (CS)
+      WKUP_TIMEOUT_LDC:
+        type: bool
+        start: 15
+        description: |
+          Wake-up timeout in LDCR mode
+
+          The interrupt flag is set (and consequently the interrupt request) only when the XO clock is available for the state
+          machine. This time may be delayed compared to the actual timer expiration. However, the real time event can be sensed
+          putting the end-of-counting signal on a GPIO output.
+      READY:
+        type: bool
+        start: 16
+        description: |
+          Ready
+
+          The interrupt flag is set each time the S2-LP goes to READY state and the XO has completed its setting transient (XO
+          ready condition detected).
+      STANDBY_DELAYED:
+        type: bool
+        start: 17
+        description: STANDBY state switching in progress
+      LOW_BATT_LVL:
+        type: bool
+        start: 18
+        description: Low battery level
+      POR:
+        type: bool
+        start: 19
+        description: Power-on reset
+      RX_TIMEOUT:
+        type: bool
+        start: 28
+        description: RX timer timeout
+      RX_SNIFF_TIMEOUT:
+        type: bool
+        start: 29
+        description: Sniff timer timeout
   FAST_RX_TIMER:
     rw_type: rw
     address: 0x54
@@ -1733,30 +1712,19 @@ registers:
   RCO_CALIBR_CONF3:
     rw_type: rw
     address: 0x6E
-    size_bits: 8
-    reset_value: 0x70
+    size_bits: 16
+    reset_value: 0x704D
     fields:
       RWT_IN:
         type: u8
-        start: 4
-        end: 8
+        start: 12
+        end: 16
         description: RWT word value for the RCO.
       RFB_IN:
         type: u8
-        start: 4
-        end: 8
-        description: MSB [4:1] part of RFB word value for RCO.
-  RCO_CALIBR_CONF2:
-    rw_type: rw
-    address: 0x6F
-    size_bits: 8
-    reset_value: 0x4D
-    fields:
-      RWT_IN:
-        type: u8
         start: 7
-        end: 8
-        description: LSB [0] part of RFB word value for RCO.
+        end: 12
+        description: Part of RFB word value for RCO.
   PM_CONF4:
     rw_type: rw
     address: 0x75
@@ -1770,12 +1738,12 @@ registers:
   PM_CONF3:
     rw_type: rw
     address: 0x76
-    size_bits: 8
-    reset_value: 0x20
+    size_bits: 16
+    reset_value: 0x2000
     fields:
       KRM_EN:
         type: bool
-        start: 7
+        start: 15
         description: |
           - 0: divider by 4 enabled (SMPS' switching frequency is
           FSW=Fdig/4)
@@ -1784,23 +1752,8 @@ registers:
       KRM:
         type: u8
         start: 0
-        end: 7
-        description:
-          "Sets the divider ratio (MSB [14:8]) of the rate multiplier (default:
-          Fsw=Fdig/4)"
-  PM_CONF2:
-    rw_type: rw
-    address: 0x77
-    size_bits: 8
-    reset_value: 0x00
-    fields:
-      KRM:
-        type: u8
-        start: 0
-        end: 8
-        description:
-          "Sets the divider ratio (LSB [7:0]) of the rate multiplier (default:
-          Fsw=Fdig/4)"
+        end: 15
+        description: "Sets the divider ratio of the rate multiplier (default: Fsw=Fdig/4)"
   PM_CONF1:
     rw_type: rw
     address: 0x78
@@ -2123,28 +2076,17 @@ registers:
         type: u8
         start: 0
         end: 8
-  RX_PCKT_LEN1:
+  RX_PCKT_LEN:
     rw_type: ro
     address: 0xA4
-    size_bits: 8
-    reset_value: 0x00
-    description: MSB [14:8] value of the length of the packet received.
+    size_bits: 16
+    reset_value: 0x0000
+    description: The length of the packet received.
     fields:
       value:
-        type: u8
+        type: u16
         start: 0
-        end: 8
-  RX_PCKT_LEN0:
-    rw_type: ro
-    address: 0xA5
-    size_bits: 8
-    reset_value: 0x00
-    description: LSB [7:0] value of the length of the packet received.
-    fields:
-      value:
-        type: u8
-        start: 0
-        end: 8
+        end: 16
   CRC_FIELD3:
     rw_type: ro
     address: 0xA6
@@ -2246,47 +2188,107 @@ registers:
         type: u8
         start: 0
         end: 8
-  IRQ_STATUS3:
+  IRQ_STATUS:
     rw_type: ro
     address: 0xFA
-    size_bits: 8
-    reset_value: 0x00
-    description: Interrupt status register 3 [31:24]
+    size_bits: 32
+    reset_value: 0x00090500
+    description: Interrupt status register
     fields:
-      value:
-        type: u8
+      RX_DATA_READY:
+        type: bool
         start: 0
-        end: 8
-  IRQ_STATUS2:
-    rw_type: ro
-    address: 0xFB
-    size_bits: 8
-    reset_value: 0x09
-    description: Interrupt status register 2 [23:16]
-    fields:
-      value:
-        type: u8
-        start: 0
-        end: 8
-  IRQ_STATUS1:
-    rw_type: ro
-    address: 0xFC
-    size_bits: 8
-    reset_value: 0x05
-    description: Interrupt status register 1 [15:8]
-    fields:
-      value:
-        type: u8
-        start: 0
-        end: 8
-  IRQ_STATUS0:
-    rw_type: ro
-    address: 0xFD
-    size_bits: 8
-    reset_value: 0x00
-    description: Interrupt status register 0 [7:0]
-    fields:
-      value:
-        type: u8
-        start: 0
-        end: 8
+        description: RX data ready
+      RX_DATA_DISC:
+        type: bool
+        start: 1
+        description: RX data discarded (upon filtering)
+      TX_DATA_SENT:
+        type: bool
+        start: 2
+        description: TX data sent
+      MAX_RE_TX_REACH:
+        type: bool
+        start: 3
+        description: Max. re-TX reached
+      CRC_ERROR:
+        type: bool
+        start: 4
+        description: CRC error
+      TX_FIFO_ERROR:
+        type: bool
+        start: 5
+        description: TX FIFO underflow/overflow error
+      RX_FIFO_ERROR:
+        type: bool
+        start: 6
+        description: RX FIFO underflow/overflow error
+      TX_FIFO_ALMOST_FULL:
+        type: bool
+        start: 7
+        description: TX FIFO almost full
+      TX_FIFO_ALMOST_EMPTY:
+        type: bool
+        start: 8
+        description: TX FIFO almost empty
+      RX_FIFO_ALMOST_FULL:
+        type: bool
+        start: 9
+        description: RX FIFO almost full
+      RX_FIFO_ALMOST_EMPTY:
+        type: bool
+        start: 10
+        description: RX FIFO almost empty
+      MAX_BO_CCA_REACH:
+        type: bool
+        start: 11
+        description: Max. number of back-off during CCA
+      VALID_PREAMBLE:
+        type: bool
+        start: 12
+        description: Valid preamble detected
+      VALID_SYNC:
+        type: bool
+        start: 13
+        description: Sync word detected
+      RSSI_ABOVE_TH:
+        type: bool
+        start: 14
+        description: RSSI above threshold (CS)
+      WKUP_TIMEOUT_LDC:
+        type: bool
+        start: 15
+        description: |
+          Wake-up timeout in LDCR mode
+
+          The interrupt flag is set (and consequently the interrupt request) only when the XO clock is available for the state
+          machine. This time may be delayed compared to the actual timer expiration. However, the real time event can be sensed
+          putting the end-of-counting signal on a GPIO output.
+      READY:
+        type: bool
+        start: 16
+        description: |
+          Ready
+
+          The interrupt flag is set each time the S2-LP goes to READY state and the XO has completed its setting transient (XO
+          ready condition detected).
+      STANDBY_DELAYED:
+        type: bool
+        start: 17
+        description: STANDBY state switching in progress
+      LOW_BATT_LVL:
+        type: bool
+        start: 18
+        description: Low battery level
+      POR:
+        type: bool
+        start: 19
+        description: Power-on reset
+      RX_TIMEOUT:
+        type: bool
+        start: 28
+        description: RX timer timeout
+      RX_SNIFF_TIMEOUT:
+        type: bool
+        start: 29
+        description: Sniff timer timeout
