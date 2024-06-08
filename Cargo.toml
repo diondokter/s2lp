@@ -5,4 +5,6 @@ edition = "2021"
 
 [dependencies]
 device-driver = { git = "https://github.com/diondokter/device-driver.git", version = "0.6.0", features = ["yaml"] }
+embedded-hal = "1.0.0"
+embedded-hal-async = "1.0.0"
 num_enum = { version = "0.7.2", default-features = false }
