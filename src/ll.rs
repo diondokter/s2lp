@@ -19,7 +19,7 @@ impl<Spi: SpiDevice> Device<Spi> {
 }
 
 impl<Spi: SpiDevice> device_driver::AsyncRegisterDevice for Device<Spi> {
-    type Error = Spi::Error;
+    type Error = DeviceError<Spi::Error>;
 
     type AddressType = u8;
 
@@ -30,12 +30,20 @@ impl<Spi: SpiDevice> device_driver::AsyncRegisterDevice for Device<Spi> {
     where
         R: device_driver::Register<SIZE_BYTES, AddressType = Self::AddressType>,
     {
-        self.spi
+        #[cfg(feature = "defmt-03")]
+        defmt::trace!(
+            "Writing to register {:X} with value {:X}",
+            R::ADDRESS,
+            data.as_raw_slice()
+        );
+
+        Ok(self
+            .spi
             .transaction(&mut [
                 Operation::Write(&[0b0000_0000, R::ADDRESS]),
                 Operation::Write(data.as_raw_slice()),
             ])
-            .await
+            .await?)
     }
 
     async fn read_register<R, const SIZE_BYTES: usize>(
@@ -45,22 +53,36 @@ impl<Spi: SpiDevice> device_driver::AsyncRegisterDevice for Device<Spi> {
     where
         R: device_driver::Register<SIZE_BYTES, AddressType = Self::AddressType>,
     {
-        self.spi
+        let result = self
+            .spi
             .transaction(&mut [
                 Operation::Write(&[0b0000_0001, R::ADDRESS]),
                 Operation::Read(data.as_raw_mut_slice()),
             ])
-            .await
+            .await?;
+
+        #[cfg(feature = "defmt-03")]
+        defmt::trace!(
+            "Reading from register {:X}, value {:X}",
+            R::ADDRESS,
+            data.as_raw_slice()
+        );
+
+        Ok(result)
     }
 }
 
 impl<Spi: SpiDevice> device_driver::AsyncCommandDevice for Device<Spi> {
-    type Error = Spi::Error;
+    type Error = DeviceError<Spi::Error>;
 
     async fn dispatch_command(&mut self, id: u32) -> Result<(), Self::Error> {
-        self.spi
+        #[cfg(feature = "defmt-03")]
+        defmt::trace!("Dispatching command: {:X}", id as u8);
+
+        Ok(self
+            .spi
             .transaction(&mut [Operation::Write(&[0b1000_0000, id as u8])])
-            .await
+            .await?)
     }
 }
 
@@ -118,5 +140,28 @@ impl<Spi: SpiDevice> device_driver::AsyncBufferDevice for Device<Spi> {
             .map_err(|_| ErrorKind::Other)?;
 
         Ok(read_len)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct DeviceError<Spi>(pub Spi);
+
+impl<Spi> From<Spi> for DeviceError<Spi> {
+    fn from(value: Spi) -> Self {
+        Self(value)
+    }
+}
+
+impl<Spi> core::ops::Deref for DeviceError<Spi> {
+    type Target = Spi;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<Spi> core::ops::DerefMut for DeviceError<Spi> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
