@@ -6,7 +6,3 @@ target = "thumbv6m-none-eabi"
 
 [env]
 DEFMT_LOG = "trace"
-
-[unstable]
-build-std = ["core"]
-build-std-features = ["optimize_for_size"]
