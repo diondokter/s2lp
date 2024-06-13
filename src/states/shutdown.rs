@@ -3,7 +3,7 @@ use core::marker::PhantomData;
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
 
-use crate::{ll::Device, Error, S2lp};
+use crate::{ll::Device, packet_format::Uninitialized, Error, S2lp};
 
 use super::{Ready, Shutdown};
 
@@ -14,7 +14,7 @@ where
     Gpio: InputPin + Wait,
     Delay: DelayNs,
 {
-    pub fn new(spi: Spi, shutdown_pin: Sdn, gpio0: Gpio, delay: Delay) -> Self {
+    pub const fn new(spi: Spi, shutdown_pin: Sdn, gpio0: Gpio, delay: Delay) -> Self {
         Self {
             device: Device::new(spi),
             shutdown_pin,
@@ -27,8 +27,7 @@ where
     /// Initialize the radio chip
     pub async fn init(
         mut self,
-    ) -> Result<S2lp<Ready, Spi, Sdn, Gpio, Delay>, Error<Spi::Error, Sdn::Error, Gpio::Error>>
-    {
+    ) -> Result<S2lp<Ready<Uninitialized>, Spi, Sdn, Gpio, Delay>, Error<Spi, Sdn, Gpio>> {
         #[cfg(feature = "defmt-03")]
         defmt::debug!("Resetting the radio");
 

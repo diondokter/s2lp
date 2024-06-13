@@ -8,6 +8,7 @@ use ll::{Device, DeviceError};
 
 pub mod ll;
 pub mod states;
+pub mod packet_format;
 
 pub struct S2lp<State, Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait, Delay: DelayNs> {
     device: Device<Spi>,
@@ -18,16 +19,18 @@ pub struct S2lp<State, Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait, De
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Error<Spi, Sdn, Gpio> {
-    Device(DeviceError<Spi>),
-    Sdn(Sdn),
-    Gpio(Gpio),
+pub enum Error<Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait> {
+    Device(DeviceError<Spi::Error>),
+    Sdn(Sdn::Error),
+    Gpio(Gpio::Error),
     /// The chip could not be initialized
     Init,
 }
 
-impl<Spi, Sdn, Gpio> From<DeviceError<Spi>> for Error<Spi, Sdn, Gpio> {
-    fn from(v: DeviceError<Spi>) -> Self {
+impl<Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait> From<DeviceError<Spi::Error>>
+    for Error<Spi, Sdn, Gpio>
+{
+    fn from(v: DeviceError<Spi::Error>) -> Self {
         Self::Device(v)
     }
 }

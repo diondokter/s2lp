@@ -713,34 +713,21 @@ registers:
   PcktCtrl6:
     rw_type: rw
     address: 0x2B
-    size_bits: 8
-    reset_value: 0x80
+    size_bits: 16
+    reset_value: 0x8010
     description: Packet control 6
     fields:
       SYNC_LEN:
         type: u8
-        start: 2
-        end: 8
+        start: 10
+        end: 16
         description: The number of bits used for the SYNC field in the packet.
       PREAMBLE_LEN:
-        type: u8
+        type: u16
         start: 0
-        end: 2
-        description:
-          The [9:8] MSB of the number of '01 or '10' of the preamble of the
+        end: 10
+        description: The number of '01 or '10' of the preamble of the
           packet.
-  PcktCtrl5:
-    rw_type: rw
-    address: 0x2C
-    size_bits: 8
-    reset_value: 0x10
-    description: Packet control 5
-    fields:
-      PREAMBLE_LEN:
-        type: u8
-        start: 0
-        end: 8
-        description: The [7:0] LSB of the number of '01 or '10' of the preamble of the packet.
   PcktCtrl4:
     rw_type: rw
     address: 0x2D
