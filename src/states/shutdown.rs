@@ -50,12 +50,6 @@ where
         #[cfg(feature = "defmt-03")]
         defmt::debug!("Init done!");
 
-        Ok(S2lp {
-            device: self.device,
-            shutdown_pin: self.shutdown_pin,
-            gpio0: self.gpio0,
-            delay: self.delay,
-            _phantom: PhantomData,
-        })
+        Ok(self.cast_state())
     }
 }

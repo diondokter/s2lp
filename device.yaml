@@ -888,50 +888,17 @@ registers:
         type: u16
         start: 0
         end: 16
-  SYNC3:
+  SYNC:
     rw_type: rw
     address: 0x33
-    size_bits: 8
-    reset_value: 0x88
-    description: SYNC word byte 3
+    size_bits: 32
+    reset_value: 0x88888888
+    description: SYNC word (in BE order)
     fields:
       value:
-        type: u8
+        type: u32
         start: 0
-        end: 8
-  SYNC2:
-    rw_type: rw
-    address: 0x34
-    size_bits: 8
-    reset_value: 0x88
-    description: SYNC word byte 2
-    fields:
-      value:
-        type: u8
-        start: 0
-        end: 8
-  SYNC1:
-    rw_type: rw
-    address: 0x35
-    size_bits: 8
-    reset_value: 0x88
-    description: SYNC word byte 1
-    fields:
-      value:
-        type: u8
-        start: 0
-        end: 8
-  SYNC0:
-    rw_type: rw
-    address: 0x36
-    size_bits: 8
-    reset_value: 0x88
-    description: SYNC word byte 0
-    fields:
-      value:
-        type: u8
-        start: 0
-        end: 8
+        end: 32
   QI:
     rw_type: rw
     address: 0x37

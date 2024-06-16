@@ -2,6 +2,7 @@ use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
 
 use crate::{
+    ll::LenWid,
     packet_format::{Basic, Uninitialized},
     Error, S2lp,
 };
@@ -17,14 +18,56 @@ where
 {
     pub async fn set_basic_format(
         mut self,
-        preamble_length: u32,
+        preamble_length: u16, // 0-2046
         preamble_pattern: PreamblePattern,
-        sync_length: u8,
+        sync_length: u8, // 0-32
         sync_pattern: u32,
-        postamble_length: u32,
+        include_address: bool,
+        postamble_length: u8, // In pairs of `01`'s
         crc_mode: CrcMode,
     ) -> Result<S2lp<Ready<Basic>, Spi, Sdn, Gpio, Delay>, Error<Spi, Sdn, Gpio>> {
-        todo!()
+        self.ll()
+            .pckt_ctrl_6()
+            .write_async(|w| w.preamble_len(preamble_length).sync_len(sync_length))
+            .await?;
+
+        self.ll()
+            .pckt_ctrl_4()
+            .write_async(|w| w.address_len(include_address))
+            .await?;
+
+        self.ll()
+            .pckt_ctrl_3()
+            .write_async(|w| {
+                w.pckt_frmt(crate::ll::PcktFrmt::Basic)
+                    .preamble_sel(preamble_pattern as u8)
+                    .rx_mode(crate::ll::RxMode::Normal)
+                    .byte_swap(false)
+                    .fsk_4_sym_swap(false)
+            })
+            .await?;
+
+        self.ll()
+            .pckt_ctrl_2()
+            .write_async(|w| w.fix_var_len(crate::ll::FixVarLen::Variable))
+            .await?;
+
+        self.ll()
+            .pckt_ctrl_1()
+            .write_async(|w| {
+                w.crc_mode(crc_mode)
+                    .fec_en(false)
+                    .second_sync_sel(false)
+                    .tx_source(crate::ll::TxSource::Normal)
+                    .whit_en(true)
+            })
+            .await?;
+
+        self.ll().sync().write_async(|w| w.value(sync_pattern.to_be())).await?;
+
+        self.ll().pckt_pstmbl().write_async(|w| w.value(postamble_length)).await?;
+
+        Ok(self.cast_state())
     }
 }
 
@@ -40,7 +83,25 @@ where
         destination_address: u8,
         payload: &[u8],
     ) -> Result<S2lp<Tx<Basic>, Spi, Sdn, Gpio, Delay>, Error<Spi, Sdn, Gpio>> {
-        todo!()
+        if payload.len() > (u16::MAX - 2) as usize {
+            return Err(Error::BufferTooLarge);
+        }
+
+        self.ll().pckt_ctrl_4().modify_async(|w| w.len_wid(if payload.len() <= 254 {LenWid::Bytes1  } else { LenWid::Bytes1 })).await?;
+        self.ll().pckt_flt_goals_3().write_async(|w| w.rx_source_addr_or_dual_sync_3(destination_address)).await?;
+
+        self.ll().flush_tx_fifo().dispatch_async().await?;
+        
+        // TODO: Figure out how to deal with the events
+
+        use device_driver::embedded_io_async::Write;
+        let initial_len = self.ll().fifo().write(payload).await?;
+        
+        self.ll().tx().dispatch_async().await?;
+        
+        self.ll().fifo().write_all(&payload[initial_len..]).await?;
+
+        Ok(self.cast_state())
     }
 }
 
