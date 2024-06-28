@@ -1,9 +1,11 @@
-use core::marker::PhantomData;
-
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
 
-use crate::{ll::Device, packet_format::Uninitialized, Error, S2lp};
+use crate::{
+    ll::{Device, GpioMode, GpioSelectOutput},
+    packet_format::Uninitialized,
+    Error, S2lp,
+};
 
 use super::{Ready, Shutdown};
 
@@ -20,7 +22,7 @@ where
             shutdown_pin,
             gpio0,
             delay,
-            _phantom: PhantomData,
+            state: Shutdown,
         }
     }
 
@@ -47,9 +49,20 @@ where
             return Err(Error::Init);
         }
 
+        let mut this = self.cast_state(Ready::new());
+
+        // Set the gpio pin we have to irq mode
+        this.ll()
+            .gpio_0_conf()
+            .write_async(|w| {
+                w.gpio_mode(GpioMode::OutputLowPower)
+                    .gpio_select_output(GpioSelectOutput::Irq)
+            })
+            .await?;
+
         #[cfg(feature = "defmt-03")]
         defmt::debug!("Init done!");
 
-        Ok(self.cast_state())
+        Ok(this)
     }
 }

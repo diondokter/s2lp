@@ -63,11 +63,17 @@ where
             })
             .await?;
 
-        self.ll().sync().write_async(|w| w.value(sync_pattern.to_be())).await?;
+        self.ll()
+            .sync()
+            .write_async(|w| w.value(sync_pattern.to_be()))
+            .await?;
 
-        self.ll().pckt_pstmbl().write_async(|w| w.value(postamble_length)).await?;
+        self.ll()
+            .pckt_pstmbl()
+            .write_async(|w| w.value(postamble_length))
+            .await?;
 
-        Ok(self.cast_state())
+        Ok(self.cast_state(Ready::new()))
     }
 }
 
@@ -87,21 +93,36 @@ where
             return Err(Error::BufferTooLarge);
         }
 
-        self.ll().pckt_ctrl_4().modify_async(|w| w.len_wid(if payload.len() <= 254 {LenWid::Bytes1  } else { LenWid::Bytes1 })).await?;
-        self.ll().pckt_flt_goals_3().write_async(|w| w.rx_source_addr_or_dual_sync_3(destination_address)).await?;
+        // Choose if we use 1 or byte field
+        self.ll()
+            .pckt_ctrl_4()
+            .modify_async(|w| {
+                w.len_wid(if payload.len() <= 254 {
+                    LenWid::Bytes1
+                } else {
+                    LenWid::Bytes1
+                })
+            })
+            .await?;
+        // Set the destination address
+        self.ll()
+            .pckt_flt_goals_3()
+            .write_async(|w| w.rx_source_addr_or_dual_sync_3(destination_address))
+            .await?;
 
+        // Clear out anything that might still be in the tx fifo
         self.ll().flush_tx_fifo().dispatch_async().await?;
-        
-        // TODO: Figure out how to deal with the events
 
+        // TODO: Set IRQ mask
+
+        // Write all we can of the payload into the fifo now
         use device_driver::embedded_io_async::Write;
         let initial_len = self.ll().fifo().write(payload).await?;
-        
-        self.ll().tx().dispatch_async().await?;
-        
-        self.ll().fifo().write_all(&payload[initial_len..]).await?;
 
-        Ok(self.cast_state())
+        // Start the tx process
+        self.ll().tx().dispatch_async().await?;
+
+        Ok(self.cast_state(Tx::new(&payload[initial_len..])))
     }
 }
 

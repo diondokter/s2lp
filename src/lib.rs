@@ -1,7 +1,5 @@
 #![cfg_attr(not(test), no_std)]
 
-use core::marker::PhantomData;
-
 use device_driver::embedded_io::ErrorKind;
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
@@ -16,19 +14,19 @@ pub struct S2lp<State, Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait, De
     shutdown_pin: Sdn,
     gpio0: Gpio,
     delay: Delay,
-    _phantom: PhantomData<State>,
+    state: State,
 }
 
 impl<State, Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait, Delay: DelayNs>
     S2lp<State, Spi, Sdn, Gpio, Delay>
 {
-    fn cast_state<NextState>(self) -> S2lp<NextState, Spi, Sdn, Gpio, Delay> {
+    fn cast_state<NextState>(self, next_state: NextState) -> S2lp<NextState, Spi, Sdn, Gpio, Delay> {
         S2lp {
             device: self.device,
             shutdown_pin: self.shutdown_pin,
             gpio0: self.gpio0,
             delay: self.delay,
-            _phantom: PhantomData,
+            state: next_state,
         }
     }
 }
