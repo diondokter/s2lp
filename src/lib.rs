@@ -9,6 +9,7 @@ pub mod ll;
 pub mod packet_format;
 pub mod states;
 
+#[derive(Debug)]
 pub struct S2lp<State, Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait, Delay: DelayNs> {
     device: Device<Spi>,
     shutdown_pin: Sdn,
@@ -20,7 +21,10 @@ pub struct S2lp<State, Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait, De
 impl<State, Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait, Delay: DelayNs>
     S2lp<State, Spi, Sdn, Gpio, Delay>
 {
-    fn cast_state<NextState>(self, next_state: NextState) -> S2lp<NextState, Spi, Sdn, Gpio, Delay> {
+    fn cast_state<NextState>(
+        self,
+        next_state: NextState,
+    ) -> S2lp<NextState, Spi, Sdn, Gpio, Delay> {
         S2lp {
             device: self.device,
             shutdown_pin: self.shutdown_pin,
@@ -31,11 +35,24 @@ impl<State, Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait, Delay: DelayN
     }
 }
 
+pub(crate) type ErrorOf<S> = <S as ErrorType>::ErrorType;
+
+pub trait ErrorType {
+    type ErrorType;
+}
+
+impl<State, Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait, Delay: DelayNs> ErrorType
+    for S2lp<State, Spi, Sdn, Gpio, Delay>
+{
+    type ErrorType = Error<Spi::Error, Sdn::Error, Gpio::Error>;
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Error<Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait> {
-    Device(DeviceError<Spi::Error>),
-    Sdn(Sdn::Error),
-    Gpio(Gpio::Error),
+#[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
+pub enum Error<SpiError, SdnError, GpioError> {
+    Device(DeviceError<SpiError>),
+    Sdn(SdnError),
+    Gpio(GpioError),
     FifoError(ErrorKind),
     /// The chip could not be initialized
     Init,
@@ -43,22 +60,22 @@ pub enum Error<Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait> {
     BufferTooSmall,
 }
 
-impl<Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait> From<ErrorKind>
-    for Error<Spi, Sdn, Gpio>
-{
+impl<SpiError, SdnError, GpioError> From<ErrorKind> for Error<SpiError, SdnError, GpioError> {
     fn from(v: ErrorKind) -> Self {
         Self::FifoError(v)
     }
 }
 
-impl<Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait> From<DeviceError<Spi::Error>>
-    for Error<Spi, Sdn, Gpio>
+impl<SpiError, SdnError, GpioError> From<DeviceError<SpiError>>
+    for Error<SpiError, SdnError, GpioError>
 {
-    fn from(v: DeviceError<Spi::Error>) -> Self {
+    fn from(v: DeviceError<SpiError>) -> Self {
         Self::Device(v)
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
 pub enum GpioNumber {
     Gpio0,
     Gpio1,

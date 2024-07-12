@@ -770,6 +770,7 @@ dependencies = [
  "device-driver",
  "embedded-hal 1.0.0",
  "embedded-hal-async",
+ "embedded-io-async",
  "num_enum",
 ]
 

@@ -2,9 +2,7 @@ use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
 
 use crate::{
-    ll::{Device, GpioMode, GpioSelectOutput},
-    packet_format::Uninitialized,
-    Error, S2lp,
+    ll::{Device, GpioMode, GpioSelectOutput}, packet_format::Uninitialized, Error, ErrorOf, S2lp
 };
 
 use super::{Ready, Shutdown};
@@ -29,7 +27,7 @@ where
     /// Initialize the radio chip
     pub async fn init(
         mut self,
-    ) -> Result<S2lp<Ready<Uninitialized>, Spi, Sdn, Gpio, Delay>, Error<Spi, Sdn, Gpio>> {
+    ) -> Result<S2lp<Ready<Uninitialized>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
         #[cfg(feature = "defmt-03")]
         defmt::debug!("Resetting the radio");
 

@@ -2,6 +2,7 @@ use device_driver::embedded_io::ErrorKind;
 use embedded_hal::spi::Operation;
 use embedded_hal_async::spi::SpiDevice;
 
+#[derive(Debug)]
 pub struct Device<Spi: SpiDevice> {
     spi: Spi,
 }
@@ -144,6 +145,7 @@ impl<Spi: SpiDevice> device_driver::AsyncBufferDevice for Device<Spi> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
 pub struct DeviceError<Spi>(pub Spi);
 
 impl<Spi> From<Spi> for DeviceError<Spi> {

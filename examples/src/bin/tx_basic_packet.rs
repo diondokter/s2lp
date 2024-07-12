@@ -10,7 +10,7 @@ use {defmt_rtt as _, panic_probe as _};
 async fn main(_spawner: Spawner) -> ! {
     let Board { s2, .. } = init_board().await;
 
-    let mut s2 = s2.init().await.unwrap();
+    let s2 = s2.init().await.unwrap();
 
     let mut s2 = s2
         .set_basic_format(
@@ -26,6 +26,10 @@ async fn main(_spawner: Spawner) -> ! {
         .unwrap();
 
     let mut tx_s2 = s2.send_packet(0xAA, b"Hello from S2!!").await.unwrap();
+    let tx_result = tx_s2.wait().await.unwrap();
+    s2 = tx_s2.finish().await.ok().unwrap();
+
+    defmt::info!("Packet has been sent! ({})", tx_result);
 
     loop {
         cortex_m::asm::bkpt();

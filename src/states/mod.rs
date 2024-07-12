@@ -3,6 +3,7 @@ use core::marker::PhantomData;
 pub mod addressable;
 pub mod ready;
 pub mod shutdown;
+pub mod tx;
 
 pub struct Shutdown;
 pub struct Standby;
@@ -18,12 +19,13 @@ impl<PF> Ready<PF> {
 
 pub struct Tx<'buffer, PF> {
     tx_buffer: &'buffer [u8],
+    tx_done: bool,
     _p: PhantomData<PF>,
 }
 
 impl<'buffer, PF> Tx<'buffer, PF> {
     pub fn new(tx_buffer: &'buffer [u8]) -> Self {
-        Self { tx_buffer, _p: PhantomData }
+        Self { tx_buffer, tx_done: false, _p: PhantomData }
     }
 }
 

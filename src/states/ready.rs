@@ -4,7 +4,7 @@ use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
 use crate::{
     ll::LenWid,
     packet_format::{Basic, Uninitialized},
-    Error, S2lp,
+    Error, ErrorOf, S2lp,
 };
 
 use super::{Ready, Tx};
@@ -25,7 +25,7 @@ where
         include_address: bool,
         postamble_length: u8, // In pairs of `01`'s
         crc_mode: CrcMode,
-    ) -> Result<S2lp<Ready<Basic>, Spi, Sdn, Gpio, Delay>, Error<Spi, Sdn, Gpio>> {
+    ) -> Result<S2lp<Ready<Basic>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
         self.ll()
             .pckt_ctrl_6()
             .write_async(|w| w.preamble_len(preamble_length).sync_len(sync_length))
@@ -73,6 +73,12 @@ where
             .write_async(|w| w.value(postamble_length))
             .await?;
 
+        // Set the tx fifo almost empty to the default
+        self.ll().fifo_config_0().write_async(|w| w).await?;
+
+        #[cfg(feature = "defmt-03")]
+        defmt::debug!("Chip configured for basic packets");
+
         Ok(self.cast_state(Ready::new()))
     }
 }
@@ -88,7 +94,7 @@ where
         mut self,
         destination_address: u8,
         payload: &[u8],
-    ) -> Result<S2lp<Tx<Basic>, Spi, Sdn, Gpio, Delay>, Error<Spi, Sdn, Gpio>> {
+    ) -> Result<S2lp<Tx<Basic>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
         if payload.len() > (u16::MAX - 2) as usize {
             return Err(Error::BufferTooLarge);
         }
@@ -104,6 +110,7 @@ where
                 })
             })
             .await?;
+
         // Set the destination address
         self.ll()
             .pckt_flt_goals_3()
@@ -113,11 +120,26 @@ where
         // Clear out anything that might still be in the tx fifo
         self.ll().flush_tx_fifo().dispatch_async().await?;
 
-        // TODO: Set IRQ mask
+        // Read the irq status to clear it
+        self.ll().irq_status().read_async().await?;
+        // Set the irq mask for all the irqs we need
+        self.ll()
+            .irq_mask()
+            .write_async(|w| {
+                w.tx_fifo_almost_empty(true)
+                    .tx_data_sent(true)
+                    .max_re_tx_reach(true)
+                    .tx_fifo_error(true)
+                    .max_bo_cca_reach(true)
+            })
+            .await?;
 
         // Write all we can of the payload into the fifo now
-        use device_driver::embedded_io_async::Write;
+        use embedded_io_async::Write;
         let initial_len = self.ll().fifo().write(payload).await?;
+
+        #[cfg(feature = "defmt-03")]
+        defmt::debug!("Sending basic packet with len: {}", payload.len());
 
         // Start the tx process
         self.ll().tx().dispatch_async().await?;
@@ -128,6 +150,8 @@ where
 
 pub use crate::ll::CrcMode;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
 #[repr(u8)]
 pub enum PreamblePattern {
     /// - `0101` for 2(G)FSK or OOK/ASK
