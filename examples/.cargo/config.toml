@@ -1,5 +1,5 @@
 [target.'cfg(all(target_arch = "arm", target_os = "none"))']
-runner = "probe-rs run --chip stm32u083rctx --catch-reset --catch-hardfault"
+runner = "probe-rs run --chip stm32u083rctx --catch-hardfault"
 
 [build]
 target = "thumbv6m-none-eabi"

@@ -3,6 +3,7 @@ edition = "2021"
 name = "stm32u0-examples"
 version = "0.1.0"
 license = "MIT OR Apache-2.0"
+default-run = "rx_basic_packet"
 
 [dependencies]
 embassy-stm32 = { version = "0.1.0", features = [ "defmt", "time-driver-any", "stm32u083rc", "memory-x", "unstable-pac", "exti", "chrono"]  }
@@ -30,6 +31,10 @@ embassy-executor = { git = "https://github.com/embassy-rs/embassy.git", rev = "3
 embassy-time = { git = "https://github.com/embassy-rs/embassy.git", rev = "3e2b015" }
 # embassy-usb = { git = "https://github.com/embassy-rs/embassy.git", rev = "3e2b015" }
 # embassy-futures = { git = "https://github.com/embassy-rs/embassy.git", rev = "3e2b015" }
+
+[features]
+# Target the discovery kit instead of the nucleo
+dk = []
 
 [profile.release]
 debug = 2

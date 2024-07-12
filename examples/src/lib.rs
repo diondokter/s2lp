@@ -39,7 +39,10 @@ pub async fn init_board() -> Board {
         p.SPI1, p.PB3, p.PA7, p.PA6, p.DMA1_CH1, p.DMA1_CH2, spi_config,
     );
     let cs = Output::new(p.PA1, Level::High, Speed::VeryHigh);
+    #[cfg(not(feature = "dk"))]
     let shutdown = Output::new(p.PA8, Level::Low, Speed::VeryHigh);
+    #[cfg(feature = "dk")]
+    let shutdown = Output::new(p.PD2, Level::Low, Speed::VeryHigh);
     let gpio0 = ExtiInput::new(p.PA0, p.EXTI0, embassy_stm32::gpio::Pull::None);
     let s2_gpio1 = Input::new(p.PA2, embassy_stm32::gpio::Pull::None);
     let s2_gpio2 = Input::new(p.PA3, embassy_stm32::gpio::Pull::None);

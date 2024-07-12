@@ -31,12 +31,12 @@ impl<Spi: SpiDevice> device_driver::AsyncRegisterDevice for Device<Spi> {
     where
         R: device_driver::Register<SIZE_BYTES, AddressType = Self::AddressType>,
     {
-        #[cfg(feature = "defmt-03")]
-        defmt::trace!(
-            "Writing to register {:X} with value {:X}",
-            R::ADDRESS,
-            data.as_raw_slice()
-        );
+        // #[cfg(feature = "defmt-03")]
+        // defmt::trace!(
+        //     "Writing to register {:X} with value {:X}",
+        //     R::ADDRESS,
+        //     data.as_raw_slice()
+        // );
 
         Ok(self
             .spi
@@ -62,12 +62,12 @@ impl<Spi: SpiDevice> device_driver::AsyncRegisterDevice for Device<Spi> {
             ])
             .await?;
 
-        #[cfg(feature = "defmt-03")]
-        defmt::trace!(
-            "Reading from register {:X}, value {:X}",
-            R::ADDRESS,
-            data.as_raw_slice()
-        );
+        // #[cfg(feature = "defmt-03")]
+        // defmt::trace!(
+        //     "Reading from register {:X}, value {:X}",
+        //     R::ADDRESS,
+        //     data.as_raw_slice()
+        // );
 
         Ok(result)
     }

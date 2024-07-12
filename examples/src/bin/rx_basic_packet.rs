@@ -26,11 +26,12 @@ async fn main(_spawner: Spawner) -> ! {
         .await
         .unwrap();
 
-    let mut tx_s2 = s2.send_packet(0xAA, b"Hello from S2!!").await.unwrap();
-    let tx_result = tx_s2.wait().await.unwrap();
-    s2 = tx_s2.finish().await.ok().unwrap();
+    let mut buf = [0; 128];
+    let mut rx_s2 = s2.start_receive(&mut buf).await.unwrap();
+    let rx_result = rx_s2.wait().await.unwrap();
+    s2 = rx_s2.finish().await.ok().unwrap();
 
-    defmt::info!("Packet has been sent! ({})", tx_result);
+    defmt::info!("Packet has been Received! ({:a})", rx_result);
 
     loop {
         cortex_m::asm::bkpt();
