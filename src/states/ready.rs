@@ -79,6 +79,7 @@ where
         // Set the rx fifo almost full to the default
         self.ll().fifo_config_3().write_async(|w| w).await?;
 
+        // Set the addresses
         self.ll()
             .pckt_flt_options()
             .modify_async(|w| {
@@ -86,18 +87,6 @@ where
                     .dest_vs_broadcast_addr(packet_filter.broadcast_address.is_some())
                     .dest_vs_multicast_addr(packet_filter.multicast_address.is_some())
                     .dest_vs_source_addr(packet_filter.source_address.is_some())
-            })
-            .await?;
-
-        self.ll()
-            .pckt_flt_goals_4()
-            .write_async(|w| w.rx_source_mask(packet_filter.source_address_mask))
-            .await?;
-
-        self.ll()
-            .pckt_flt_goals_3()
-            .write_async(|w| {
-                w.rx_source_addr_or_dual_sync_3(packet_filter.source_address.unwrap_or_default())
             })
             .await?;
 
@@ -116,15 +105,31 @@ where
             .await?;
 
         self.ll()
+            .pckt_flt_goals_0()
+            .write_async(|w| {
+                w.tx_source_addr_or_dual_sync_0(packet_filter.source_address.unwrap_or_default())
+            })
+            .await?;
+
+        self.ll()
             .protocol_1()
             .modify_async(|w| w.auto_pckt_flt(true))
             .await?;
 
-        self.ll().mod_2().modify_async(|w| w.modulation_type(crate::ll::ModulationType::Fsk2)).await?;
+        self.ll()
+            .mod_2()
+            .modify_async(|w| w.modulation_type(crate::ll::ModulationType::Fsk2))
+            .await?;
 
-        self.ll().pm_conf_1().modify_async(|w| w.smps_lvl_mode(true)).await?;
+        self.ll()
+            .pm_conf_1()
+            .modify_async(|w| w.smps_lvl_mode(true))
+            .await?;
 
-        self.ll().rssi_flt().modify_async(|w| w.cs_mode(crate::ll::CsMode::StaticCs).rssi_flt(14)).await?;
+        self.ll()
+            .rssi_flt()
+            .modify_async(|w| w.cs_mode(crate::ll::CsMode::StaticCs).rssi_flt(14))
+            .await?;
         self.ll().rssi_th().write_async(|w| w.value(65)).await?; // -85 dB
 
         #[cfg(feature = "defmt-03")]
@@ -143,18 +148,40 @@ where
 {
     pub async fn send_packet(
         mut self,
-        destination_address: u8,
+        destination_address: Option<u8>,
         payload: &[u8],
     ) -> Result<S2lp<Tx<Basic>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
-        if payload.len() > (u16::MAX - 2) as usize {
+        if payload.len() > (u16::MAX - destination_address.is_some() as u16) as usize {
             return Err(Error::BufferTooLarge);
         }
 
-        // Set the destination address
+        // Set length and address inclusion
         self.ll()
-            .pckt_flt_goals_0()
-            .write_async(|w| w.tx_source_addr_or_dual_sync_0(destination_address))
+            .pckt_ctrl_4()
+            .modify_async(|w| {
+                w.address_len(destination_address.is_some()).len_wid(
+                    if (payload.len() - destination_address.is_some() as usize) <= 255 {
+                        LenWid::Bytes1
+                    } else {
+                        LenWid::Bytes2
+                    },
+                )
+            })
             .await?;
+
+        // Set the packet lenght
+        self.ll()
+            .pckt_len()
+            .write_async(|w| w.value(payload.len() as u16 + 1))
+            .await?;
+
+        // Set the destination address
+        if let Some(destination_address) = destination_address {
+            self.ll()
+                .pckt_flt_goals_3()
+                .write_async(|w| w.rx_source_addr_or_dual_sync_3(destination_address))
+                .await?;
+        }
 
         // Clear out anything that might still be in the tx fifo
         self.ll().flush_tx_fifo().dispatch_async().await?;
@@ -244,8 +271,6 @@ pub enum PreamblePattern {
 pub struct PacketFilteringOptions {
     discard_bad_crc: bool,
     source_address: Option<u8>,
-    /// Bitmask for the source address
-    source_address_mask: u8,
     multicast_address: Option<u8>,
     broadcast_address: Option<u8>,
 }
@@ -255,7 +280,6 @@ impl Default for PacketFilteringOptions {
         Self {
             discard_bad_crc: true,
             source_address: Some(0xAA),
-            source_address_mask: 0xFF,
             multicast_address: None,
             broadcast_address: Some(0xFF),
         }

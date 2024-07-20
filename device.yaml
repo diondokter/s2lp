@@ -431,7 +431,7 @@ registers:
     reset_value: 0x93
     description: "The mantissa value of the frequency deviation equation (see Eq. (10))."
     fields:
-      value:
+      fdev_m:
         type: u8
         start: 0
         end: 8
@@ -1580,7 +1580,7 @@ registers:
         end: 2
         description: PA bessel filter bandwidth (see Section 5.4.2.1 OOK smoothing).
         strict_conversion:
-          khz12_5:
+          khz12p5:
             value: 0b00
             description: 12.5 kHz (data rate 16.2 kbps)
           khz25:

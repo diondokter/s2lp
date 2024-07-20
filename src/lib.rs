@@ -4,6 +4,7 @@ use device_driver::embedded_io::ErrorKind;
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
 use ll::{Device, DeviceError};
+use num_enum::TryFromPrimitive;
 
 pub mod ll;
 pub mod packet_format;
@@ -56,8 +57,14 @@ pub enum Error<SpiError, SdnError, GpioError> {
     FifoError(ErrorKind),
     /// The chip could not be initialized
     Init,
+    BadConfig {
+        reason: &'static str,
+    },
     BufferTooLarge,
     BufferTooSmall,
+    ConversionError {
+        name: &'static str,
+    },
 }
 
 impl<SpiError, SdnError, GpioError> From<ErrorKind> for Error<SpiError, SdnError, GpioError> {
@@ -71,6 +78,14 @@ impl<SpiError, SdnError, GpioError> From<DeviceError<SpiError>>
 {
     fn from(v: DeviceError<SpiError>) -> Self {
         Self::Device(v)
+    }
+}
+
+impl<SpiError, SdnError, GpioError, Enum: TryFromPrimitive>
+    From<num_enum::TryFromPrimitiveError<Enum>> for Error<SpiError, SdnError, GpioError>
+{
+    fn from(_: num_enum::TryFromPrimitiveError<Enum>) -> Self {
+        Self::ConversionError { name: Enum::NAME }
     }
 }
 

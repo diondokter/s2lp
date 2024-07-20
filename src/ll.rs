@@ -77,8 +77,8 @@ impl<Spi: SpiDevice> device_driver::AsyncCommandDevice for Device<Spi> {
     type Error = DeviceError<Spi::Error>;
 
     async fn dispatch_command(&mut self, id: u32) -> Result<(), Self::Error> {
-        #[cfg(feature = "defmt-03")]
-        defmt::trace!("Dispatching command: {:X}", id as u8);
+        // #[cfg(feature = "defmt-03")]
+        // defmt::trace!("Dispatching command: {:X}", id as u8);
 
         Ok(self
             .spi

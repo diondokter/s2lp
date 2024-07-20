@@ -2,6 +2,7 @@
 #![no_main]
 
 use embassy_executor::Spawner;
+use s2lp::states::shutdown::Config;
 use stm32u0_examples::{init_board, Board};
 use {defmt_rtt as _, panic_probe as _};
 
@@ -9,7 +10,7 @@ use {defmt_rtt as _, panic_probe as _};
 async fn main(_spawner: Spawner) -> ! {
     let Board { s2, .. } = init_board().await;
 
-    let mut s2 = s2.init().await.unwrap();
+    let mut s2 = s2.init(Config::default()).await.unwrap();
 
     let version = s2
         .ll()

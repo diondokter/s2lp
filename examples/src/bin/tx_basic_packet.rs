@@ -2,7 +2,10 @@
 #![no_main]
 
 use embassy_executor::Spawner;
-use s2lp::{ll::CrcMode, states::ready::PreamblePattern};
+use s2lp::{
+    ll::CrcMode,
+    states::{ready::PreamblePattern, shutdown::Config},
+};
 use stm32u0_examples::{init_board, Board};
 use {defmt_rtt as _, panic_probe as _};
 
@@ -10,7 +13,7 @@ use {defmt_rtt as _, panic_probe as _};
 async fn main(_spawner: Spawner) -> ! {
     let Board { s2, .. } = init_board().await;
 
-    let s2 = s2.init().await.unwrap();
+    let s2 = s2.init(Config::default()).await.unwrap();
 
     let mut s2 = s2
         .set_basic_format(
@@ -26,7 +29,7 @@ async fn main(_spawner: Spawner) -> ! {
         .await
         .unwrap();
 
-    let mut tx_s2 = s2.send_packet(0xAA, b"Hello from S2!!").await.unwrap();
+    let mut tx_s2 = s2.send_packet(Some(0xAA), b"Hello from S2!!").await.unwrap();
     let tx_result = tx_s2.wait().await.unwrap();
     s2 = tx_s2.finish().await.ok().unwrap();
 
