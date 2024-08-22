@@ -286,7 +286,7 @@ where
             let synt_target = ((config.base_frequency as u64) << 20) * (band_factor / 2) as u64 * refdiv as u64;
             let synt = ((synt_target + config.xtal_frequency as u64 / 2) / config.xtal_frequency as u64) as u32;
 
-            let vco_freq = config.base_frequency * band_factor;
+            let vco_freq = config.base_frequency as u64 * band_factor as u64;
             let f_ref = config.xtal_frequency / refdiv;
 
             let (cp_isel, pfd_split) = match (vco_freq, f_ref) {
@@ -373,7 +373,7 @@ const fn is_ch_bw(bandwidth: u32, dig_freq: u32) -> bool {
 }
 
 /// VCO center frequency in Hz
-const VCO_CENTER_FREQ: u32 = 3600000000;
+const VCO_CENTER_FREQ: u64 = 3600000000;
 
 /// Band select factor for high band. Factor B in the equation 2
 const HIGH_BAND_FACTOR: u32 = 4;

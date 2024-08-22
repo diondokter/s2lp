@@ -1,3 +1,4 @@
+use embassy_futures::select::{select, Either};
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
 use embedded_io_async::Read;
@@ -32,10 +33,28 @@ where
             defmt::trace!("RX wait interrupt: {}", defmt::Debug2Format(&irq_status));
 
             if irq_status.rx_data_ready() {
-                let received = self.device.fifo().read(&mut self.state.rx_buffer).await?;
-                self.state.written += received;
-                #[cfg(feature = "defmt-03")]
-                defmt::trace!("Received {} bytes (total = {}) {:X}", received, self.state.written, &self.state.rx_buffer[..self.state.written]);
+                match select(
+                    self.device.fifo().read(&mut self.state.rx_buffer),
+                    self.delay.delay_ms(100),
+                )
+                .await
+                {
+                    Either::First(received) => {
+                        let received = received?;
+                        self.state.written += received;
+                        #[cfg(feature = "defmt-03")]
+                        defmt::trace!(
+                            "Received {} bytes (total = {}) {:X}",
+                            received,
+                            self.state.written,
+                            &self.state.rx_buffer[..self.state.written]
+                        );
+                    }
+                    Either::Second(_) => {
+                        #[cfg(feature = "defmt-03")]
+                        defmt::error!("Timeout reading the RX fifo");
+                    }
+                }
             }
 
             if irq_status.valid_sync() {

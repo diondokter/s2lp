@@ -253,7 +253,7 @@ version = "0.1.0"
 source = "git+https://github.com/embassy-rs/embassy.git?rev=3e2b015#3e2b015dc477023887ae9b0e5e3adf5deb7af362"
 dependencies = [
  "defmt",
- "embassy-futures",
+ "embassy-futures 0.1.1 (git+https://github.com/embassy-rs/embassy.git?rev=3e2b015)",
  "embassy-sync",
  "embassy-time",
  "embedded-hal 0.2.7",
@@ -288,6 +288,12 @@ dependencies = [
  "quote",
  "syn 2.0.66",
 ]
+
+[[package]]
+name = "embassy-futures"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f878075b9794c1e4ac788c95b728f26aa6366d32eeb10c7051389f898f7d067"
 
 [[package]]
 name = "embassy-futures"
@@ -328,7 +334,7 @@ dependencies = [
  "defmt",
  "document-features",
  "embassy-embedded-hal",
- "embassy-futures",
+ "embassy-futures 0.1.1 (git+https://github.com/embassy-rs/embassy.git?rev=3e2b015)",
  "embassy-hal-internal",
  "embassy-net-driver",
  "embassy-sync",
@@ -768,6 +774,7 @@ version = "0.1.0"
 dependencies = [
  "defmt",
  "device-driver",
+ "embassy-futures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "embedded-hal 1.0.0",
  "embedded-hal-async",
  "embedded-io-async",
