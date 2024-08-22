@@ -167,3 +167,34 @@ impl<Spi> core::ops::DerefMut for DeviceError<Spi> {
         &mut self.0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use embedded_hal_mock::eh1::spi;
+    use futures_test::test;
+
+    #[test]
+    async fn read_chip_id() {
+        let mut spi_device = spi::Mock::new(&[
+            spi::Transaction::transaction_start(),
+            spi::Transaction::write_vec(vec![0x01, 0xF1]),
+            spi::Transaction::read(0xC1),
+            spi::Transaction::transaction_end(),
+            spi::Transaction::transaction_start(),
+            spi::Transaction::write_vec(vec![0x01, 0xF0]),
+            spi::Transaction::read(0x03),
+            spi::Transaction::transaction_end(),
+        ]);
+        let mut s2 = Device::new(&mut spi_device);
+
+        let version = s2.device_info_0().read_async().await.unwrap().version();
+        let partnum = s2.device_info_1().read_async().await.unwrap().partnum();
+
+        println!("Version: {:X}, partnum: {:X}", version, partnum);
+        assert_eq!(version, 0xC1);
+        assert_eq!(partnum, 0x03);
+
+        spi_device.done();
+    }
+}

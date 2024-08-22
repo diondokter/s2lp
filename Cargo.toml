@@ -14,3 +14,7 @@ embassy-futures = { version = "0.1.1", default-features = false }
 
 [features]
 defmt-03 = ["dep:defmt"]
+
+[dev-dependencies]
+embedded-hal-mock = { version = "0.11.1", features = ["embedded-hal-async"] }
+futures-test = "0.3.30"
