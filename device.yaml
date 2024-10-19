@@ -307,7 +307,7 @@ MOD4:
   type: register
   address: 0x0E
   size_bits: 16
-  reset_value: 0x83
+  reset_value: 0x832B
   description: "The mantissa value of the data rate equation, see Eq. (14)."
   fields:
     value:
@@ -864,7 +864,7 @@ SYNC:
   address: 0x33
   size_bits: 32
   reset_value: 0x88888888
-  description: SYNC word (in BE order)
+  description: SYNC word
   fields:
     value:
       base: uint
@@ -2144,107 +2144,11 @@ DEVICE_INFO0:
       start: 0
       end: 8
 IRQ_STATUS:
-  type: register
-  access: RO
-  address: 0xFA
-  size_bits: 32
-  reset_value: 0x00090500
+  type: ref
+  target: IRQ_MASK
   description: Interrupt status register
-  fields:
-    RX_DATA_READY:
-      base: bool
-      start: 0
-      description: RX data ready
-    RX_DATA_DISC:
-      base: bool
-      start: 1
-      description: RX data discarded (upon filtering)
-    TX_DATA_SENT:
-      base: bool
-      start: 2
-      description: TX data sent
-    MAX_RE_TX_REACH:
-      base: bool
-      start: 3
-      description: Max. re-TX reached
-    CRC_ERROR:
-      base: bool
-      start: 4
-      description: CRC error
-    TX_FIFO_ERROR:
-      base: bool
-      start: 5
-      description: TX FIFO underflow/overflow error
-    RX_FIFO_ERROR:
-      base: bool
-      start: 6
-      description: RX FIFO underflow/overflow error
-    TX_FIFO_ALMOST_FULL:
-      base: bool
-      start: 7
-      description: TX FIFO almost full
-    TX_FIFO_ALMOST_EMPTY:
-      base: bool
-      start: 8
-      description: TX FIFO almost empty
-    RX_FIFO_ALMOST_FULL:
-      base: bool
-      start: 9
-      description: RX FIFO almost full
-    RX_FIFO_ALMOST_EMPTY:
-      base: bool
-      start: 10
-      description: RX FIFO almost empty
-    MAX_BO_CCA_REACH:
-      base: bool
-      start: 11
-      description: Max. number of back-off during CCA
-    VALID_PREAMBLE:
-      base: bool
-      start: 12
-      description: Valid preamble detected
-    VALID_SYNC:
-      base: bool
-      start: 13
-      description: Sync word detected
-    RSSI_ABOVE_TH:
-      base: bool
-      start: 14
-      description: RSSI above threshold (CS)
-    WKUP_TIMEOUT_LDC:
-      base: bool
-      start: 15
-      description: |
-        Wake-up timeout in LDCR mode
-
-        The interrupt flag is set (and consequently the interrupt request) only when the XO clock is available for the state
-        machine. This time may be delayed compared to the actual timer expiration. However, the real time event can be sensed
-        putting the end-of-counting signal on a GPIO output.
-    READY:
-      base: bool
-      start: 16
-      description: |
-        Ready
-
-        The interrupt flag is set each time the S2-LP goes to READY state and the XO has completed its setting transient (XO
-        ready condition detected).
-    STANDBY_DELAYED:
-      base: bool
-      start: 17
-      description: STANDBY state switching in progress
-    LOW_BATT_LVL:
-      base: bool
-      start: 18
-      description: Low battery level
-    POR:
-      base: bool
-      start: 19
-      description: Power-on reset
-    RX_TIMEOUT:
-      base: bool
-      start: 28
-      description: RX timer timeout
-    RX_SNIFF_TIMEOUT:
-      base: bool
-      start: 29
-      description: Sniff timer timeout
+  override:
+    type: register
+    access: RO
+    address: 0xFA
+    reset_value: 0x00090500
