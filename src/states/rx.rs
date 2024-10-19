@@ -1,7 +1,6 @@
 use embassy_futures::select::{select, Either};
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
-use embedded_io_async::Read;
 
 use crate::{Error, ErrorOf, S2lp};
 
@@ -34,7 +33,7 @@ where
 
             if irq_status.rx_data_ready() {
                 match select(
-                    self.device.fifo().read(&mut self.state.rx_buffer),
+                    self.device.fifo().read_async(&mut self.state.rx_buffer),
                     self.delay.delay_ms(100),
                 )
                 .await

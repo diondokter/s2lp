@@ -1,6 +1,5 @@
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
-use embedded_io_async::Write;
 
 use crate::{Error, ErrorOf, S2lp};
 
@@ -40,7 +39,7 @@ where
 
             if irq_status.tx_fifo_almost_empty() {
                 // Refill the fifo
-                let written = self.device.fifo().write(self.state.tx_buffer).await?;
+                let written = self.device.fifo().write_async(self.state.tx_buffer).await?;
                 self.state.tx_buffer = &self.state.tx_buffer[written..];
 
                 continue;

@@ -29,108 +29,126 @@ where
     ) -> Result<S2lp<Ready<Basic>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
         self.ll()
             .pckt_ctrl_6()
-            .write_async(|w| w.preamble_len(preamble_length).sync_len(sync_length))
+            .write_async(|reg| {
+                reg.set_preamble_len(preamble_length);
+                reg.set_sync_len(sync_length)
+            })
             .await?;
 
         self.ll()
             .pckt_ctrl_4()
-            .write_async(|w| w.address_len(include_address).len_wid(LenWid::Bytes2))
+            .write_async(|reg| {
+                reg.set_address_len(include_address);
+                reg.set_len_wid(LenWid::Bytes2)
+            })
             .await?;
 
         self.ll()
             .pckt_ctrl_3()
-            .write_async(|w| {
-                w.pckt_frmt(crate::ll::PcktFrmt::Basic)
-                    .preamble_sel(preamble_pattern as u8)
-                    .rx_mode(crate::ll::RxMode::Normal)
-                    .byte_swap(false)
-                    .fsk_4_sym_swap(false)
+            .write_async(|reg| {
+                reg.set_pckt_frmt(crate::ll::PacketFormat::Basic);
+                reg.set_preamble_sel(preamble_pattern as u8);
+                reg.set_rx_mode(crate::ll::RxMode::Normal);
+                reg.set_byte_swap(false);
+                reg.set_fsk_4_sym_swap(false);
             })
             .await?;
 
         self.ll()
             .pckt_ctrl_2()
-            .write_async(|w| w.fix_var_len(crate::ll::FixVarLen::Variable))
+            .write_async(|reg| reg.set_fix_var_len(crate::ll::FixVarLen::Variable))
             .await?;
 
         self.ll()
             .pckt_ctrl_1()
-            .write_async(|w| {
-                w.crc_mode(crc_mode)
-                    .fec_en(false)
-                    .second_sync_sel(false)
-                    .tx_source(crate::ll::TxSource::Normal)
-                    .whit_en(true)
+            .write_async(|reg| {
+                reg.set_crc_mode(crc_mode);
+                reg.set_fec_en(false);
+                reg.set_second_sync_sel(false);
+                reg.set_tx_source(crate::ll::TxSource::Normal);
+                reg.set_whit_en(true);
             })
             .await?;
 
         self.ll()
             .sync()
-            .write_async(|w| w.value(sync_pattern.to_be()))
+            .write_async(|reg| reg.set_value(sync_pattern.to_be()))
             .await?;
 
         self.ll()
             .pckt_pstmbl()
-            .write_async(|w| w.value(postamble_length))
+            .write_async(|reg| reg.set_value(postamble_length))
             .await?;
 
         // Set the tx fifo almost empty to the default
-        self.ll().fifo_config_0().write_async(|w| w).await?;
+        self.ll().fifo_config_0().write_async(|_| ()).await?;
         // Set the rx fifo almost full to the default
-        self.ll().fifo_config_3().write_async(|w| w).await?;
+        self.ll().fifo_config_3().write_async(|_| ()).await?;
 
         // Set the addresses
         self.ll()
             .pckt_flt_options()
-            .modify_async(|w| {
-                w.crc_flt(packet_filter.discard_bad_crc)
-                    .dest_vs_broadcast_addr(packet_filter.broadcast_address.is_some())
-                    .dest_vs_multicast_addr(packet_filter.multicast_address.is_some())
-                    .dest_vs_source_addr(packet_filter.source_address.is_some())
+            .modify_async(|reg| {
+                reg.set_crc_flt(packet_filter.discard_bad_crc);
+                reg.set_dest_vs_broadcast_addr(packet_filter.broadcast_address.is_some());
+                reg.set_dest_vs_multicast_addr(packet_filter.multicast_address.is_some());
+                reg.set_dest_vs_source_addr(packet_filter.source_address.is_some());
             })
             .await?;
 
         self.ll()
             .pckt_flt_goals_2()
-            .write_async(|w| {
-                w.broadcast_addr_or_dual_sync_2(packet_filter.broadcast_address.unwrap_or_default())
+            .write_async(|reg| {
+                reg.set_broadcast_addr_or_dual_sync_2(
+                    packet_filter.broadcast_address.unwrap_or_default(),
+                )
             })
             .await?;
 
         self.ll()
             .pckt_flt_goals_1()
-            .write_async(|w| {
-                w.multicast_addr_or_dual_sync_1(packet_filter.multicast_address.unwrap_or_default())
+            .write_async(|reg| {
+                reg.set_multicast_addr_or_dual_sync_1(
+                    packet_filter.multicast_address.unwrap_or_default(),
+                )
             })
             .await?;
 
         self.ll()
             .pckt_flt_goals_0()
-            .write_async(|w| {
-                w.tx_source_addr_or_dual_sync_0(packet_filter.source_address.unwrap_or_default())
+            .write_async(|reg| {
+                reg.set_tx_source_addr_or_dual_sync_0(
+                    packet_filter.source_address.unwrap_or_default(),
+                )
             })
             .await?;
 
         self.ll()
             .protocol_1()
-            .modify_async(|w| w.auto_pckt_flt(true))
+            .modify_async(|reg| reg.set_auto_pckt_flt(true))
             .await?;
 
         self.ll()
             .mod_2()
-            .modify_async(|w| w.modulation_type(crate::ll::ModulationType::Fsk2))
+            .modify_async(|reg| reg.set_modulation_type(crate::ll::ModulationType::Fsk2))
             .await?;
 
         self.ll()
             .pm_conf_1()
-            .modify_async(|w| w.smps_lvl_mode(true))
+            .modify_async(|reg| reg.set_smps_lvl_mode(true))
             .await?;
 
         self.ll()
             .rssi_flt()
-            .modify_async(|w| w.cs_mode(crate::ll::CsMode::StaticCs).rssi_flt(14))
+            .modify_async(|reg| {
+                reg.set_cs_mode(crate::ll::CsMode::StaticCs);
+                reg.set_rssi_flt(14)
+            })
             .await?;
-        self.ll().rssi_th().write_async(|w| w.value(65)).await?; // -85 dB
+        self.ll()
+            .rssi_th()
+            .write_async(|reg| reg.set_value(65))
+            .await?; // -85 dB
 
         #[cfg(feature = "defmt-03")]
         defmt::debug!("Chip configured for basic packets");
@@ -158,8 +176,9 @@ where
         // Set length and address inclusion
         self.ll()
             .pckt_ctrl_4()
-            .modify_async(|w| {
-                w.address_len(destination_address.is_some()).len_wid(
+            .modify_async(|reg| {
+                reg.set_address_len(destination_address.is_some());
+                reg.set_len_wid(
                     if (payload.len() - destination_address.is_some() as usize) <= 255 {
                         LenWid::Bytes1
                     } else {
@@ -172,14 +191,14 @@ where
         // Set the packet lenght
         self.ll()
             .pckt_len()
-            .write_async(|w| w.value(payload.len() as u16 + 1))
+            .write_async(|reg| reg.set_value(payload.len() as u16 + 1))
             .await?;
 
         // Set the destination address
         if let Some(destination_address) = destination_address {
             self.ll()
                 .pckt_flt_goals_3()
-                .write_async(|w| w.rx_source_addr_or_dual_sync_3(destination_address))
+                .write_async(|reg| reg.set_rx_source_addr_or_dual_sync_3(destination_address))
                 .await?;
         }
 
@@ -191,18 +210,17 @@ where
         // Set the irq mask for all the irqs we need
         self.ll()
             .irq_mask()
-            .write_async(|w| {
-                w.tx_fifo_almost_empty(true)
-                    .tx_data_sent(true)
-                    .max_re_tx_reach(true)
-                    .tx_fifo_error(true)
-                    .max_bo_cca_reach(true)
+            .write_async(|reg| {
+                reg.set_tx_fifo_almost_empty(true);
+                reg.set_tx_data_sent(true);
+                reg.set_max_re_tx_reach(true);
+                reg.set_tx_fifo_error(true);
+                reg.set_max_bo_cca_reach(true);
             })
             .await?;
 
         // Write all we can of the payload into the fifo now
-        use embedded_io_async::Write;
-        let initial_len = self.ll().fifo().write(payload).await?;
+        let initial_len = self.ll().fifo().write_async(payload).await?;
 
         #[cfg(feature = "defmt-03")]
         defmt::debug!("Sending basic packet with len: {}", payload.len());
@@ -223,16 +241,16 @@ where
         // Set the irq mask for all the irqs we need
         self.ll()
             .irq_mask()
-            .write_async(|w| {
-                w.rx_data_ready(true)
-                    .rx_fifo_almost_full(true)
-                    .rx_fifo_error(true)
-                    .rx_timeout(true)
-                    .rx_data_disc(true)
-                    .crc_error(true)
-                    .rx_sniff_timeout(true)
-                    .valid_preamble(true)
-                    .valid_sync(true)
+            .write_async(|reg| {
+                reg.set_rx_data_ready(true);
+                reg.set_rx_fifo_almost_full(true);
+                reg.set_rx_fifo_error(true);
+                reg.set_rx_timeout(true);
+                reg.set_rx_data_disc(true);
+                reg.set_crc_error(true);
+                reg.set_rx_sniff_timeout(true);
+                reg.set_valid_preamble(true);
+                reg.set_valid_sync(true);
             })
             .await?;
         // Read the irq status to clear it

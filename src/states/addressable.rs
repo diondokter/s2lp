@@ -1,7 +1,7 @@
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
 
-use crate::{ll::Device, S2lp};
+use crate::{ll::{Device, DeviceInterface}, S2lp};
 
 use super::Addressable;
 
@@ -18,7 +18,7 @@ where
     ///
     /// Warning: The driver makes assumptions about the state of the device.
     /// Changing registers directly may break the driver. So be careful.
-    pub fn ll(&mut self) -> &mut Device<Spi> {
+    pub fn ll(&mut self) -> &mut Device<DeviceInterface<Spi>> {
         &mut self.device
     }
 }

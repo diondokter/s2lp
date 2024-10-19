@@ -3,8 +3,7 @@
 use device_driver::embedded_io::ErrorKind;
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
-use ll::{Device, DeviceError};
-use num_enum::TryFromPrimitive;
+use ll::{Device, DeviceError, DeviceInterface};
 
 pub mod ll;
 pub mod packet_format;
@@ -12,7 +11,7 @@ pub mod states;
 
 #[derive(Debug)]
 pub struct S2lp<State, Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait, Delay: DelayNs> {
-    device: Device<Spi>,
+    device: Device<DeviceInterface<Spi>>,
     shutdown_pin: Sdn,
     gpio0: Gpio,
     delay: Delay,
@@ -81,11 +80,11 @@ impl<SpiError, SdnError, GpioError> From<DeviceError<SpiError>>
     }
 }
 
-impl<SpiError, SdnError, GpioError, Enum: TryFromPrimitive>
-    From<num_enum::TryFromPrimitiveError<Enum>> for Error<SpiError, SdnError, GpioError>
+impl<SpiError, SdnError, GpioError, T> From<device_driver::ConversionError<T>>
+    for Error<SpiError, SdnError, GpioError>
 {
-    fn from(_: num_enum::TryFromPrimitiveError<Enum>) -> Self {
-        Self::ConversionError { name: Enum::NAME }
+    fn from(val: device_driver::ConversionError<T>) -> Self {
+        Self::ConversionError { name: val.target }
     }
 }
 
