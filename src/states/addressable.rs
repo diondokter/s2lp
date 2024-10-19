@@ -1,7 +1,10 @@
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
 
-use crate::{ll::{Device, DeviceInterface}, S2lp};
+use crate::{
+    ll::{Device, DeviceInterface},
+    S2lp,
+};
 
 use super::Addressable;
 

@@ -2,9 +2,9 @@ use core::marker::PhantomData;
 
 pub mod addressable;
 pub mod ready;
+pub mod rx;
 pub mod shutdown;
 pub mod tx;
-pub mod rx;
 
 pub struct Shutdown;
 pub struct Standby;
@@ -26,7 +26,11 @@ pub struct Tx<'buffer, PF> {
 
 impl<'buffer, PF> Tx<'buffer, PF> {
     pub fn new(tx_buffer: &'buffer [u8]) -> Self {
-        Self { tx_buffer, tx_done: false, _p: PhantomData }
+        Self {
+            tx_buffer,
+            tx_done: false,
+            _p: PhantomData,
+        }
     }
 }
 
@@ -39,7 +43,12 @@ pub struct Rx<'buffer, PF> {
 
 impl<'buffer, PF> Rx<'buffer, PF> {
     pub fn new(rx_buffer: &'buffer mut [u8]) -> Self {
-        Self { rx_buffer, written: 0, rx_done: false, _p: PhantomData }
+        Self {
+            rx_buffer,
+            written: 0,
+            rx_done: false,
+            _p: PhantomData,
+        }
     }
 }
 
