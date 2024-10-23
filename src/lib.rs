@@ -64,6 +64,7 @@ pub enum Error<SpiError, SdnError, GpioError> {
     ConversionError {
         name: &'static str,
     },
+    BadState,
 }
 
 impl<SpiError, SdnError, GpioError> From<ErrorKind> for Error<SpiError, SdnError, GpioError> {

@@ -1,7 +1,8 @@
+use embassy_futures::select::{select, Either};
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
 
-use crate::{Error, ErrorOf, S2lp};
+use crate::{ll::State, Error, ErrorOf, S2lp};
 
 use super::{Ready, Tx};
 
@@ -22,7 +23,22 @@ where
 
         loop {
             // Wait for the interrupt
-            self.gpio0.wait_for_low().await.map_err(Error::Gpio)?;
+            match select(self.gpio0.wait_for_low(), self.delay.delay_ms(1000)).await {
+                Either::First(res) => res.map_err(Error::Gpio)?,
+                Either::Second(()) => {
+                    // Timeout. Check for bad state
+                    let state = self.ll().mc_state_0().read_async().await?.state();
+                    #[cfg(feature = "defmt-03")]
+                    defmt::error!(
+                        "TX wait timeout out in state: {}",
+                        defmt::Debug2Format(&state)
+                    );
+                    match state {
+                        Ok(State::Lockst) | Err(_) => return Err(Error::BadState),
+                        _ => {}
+                    }
+                }
+            }
 
             // Figure out what's up
             let irq_status = self.ll().irq_status().read_async().await?;
