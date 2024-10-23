@@ -458,6 +458,7 @@ fn compute_fdev(
 
 fn search_channel_filter_bandwidth(target_bw: u32, dig_freq: u32) -> crate::ll::ChFlt {
     // Datasheet Table 44
+    // Every unit is 100hz
     const CHANNEL_FILTER_WORDS: [u16; 90] = [
         8001, 7951, 7684, 7368, 7051, 6709, 6423, 5867, 5414, 4509, 4259, 4032, 3808, 3621, 3417,
         3254, 2945, 2703, 2247, 2124, 2015, 1900, 1807, 1706, 1624, 1471, 1350, 1123, 1062, 1005,
@@ -466,7 +467,7 @@ fn search_channel_filter_bandwidth(target_bw: u32, dig_freq: u32) -> crate::ll::
         56, 53, 51, 46, 42, 35, 33, 31, 30, 28, 27, 25, 23, 21, 18, 17, 16, 15, 14, 13, 13, 12, 11,
     ];
 
-    let word_to_bandwidth = |word: u16| (word as u64 * dig_freq as u64 / (26_000_000 / 10)) as u32;
+    let word_to_bandwidth = |word: u16| (word as u64 * 100 * dig_freq as u64 / 26_000_000) as u32;
 
     let (best_index, _) = CHANNEL_FILTER_WORDS
         .into_iter()
