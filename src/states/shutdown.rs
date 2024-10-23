@@ -1,3 +1,5 @@
+use core::u8;
+
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
 
@@ -186,41 +188,48 @@ where
             // Search for the smallest exponent that our fdev fits in for the highest resolution
             let mut used_exponent = 0;
             for exponent in 0..16 {
-                if compute_fdev(
+                let fdev = compute_fdev(
                     config.xtal_frequency,
                     u8::MAX,
                     exponent,
                     band_factor,
                     refdiv,
-                ) > config.frequency_deviation
-                {
+                );
+
+                if fdev > config.frequency_deviation {
                     used_exponent = exponent;
                     break;
                 }
             }
 
-            let used_mantissa = if used_exponent == 0 {
-                let target = (config.frequency_deviation as u64) << 22;
-                (target + (config.frequency_deviation as u64 / 2))
-                    / config.frequency_deviation as u64
-            } else {
-                let target = (config.frequency_deviation as u64) << (23 - used_exponent as u64);
-                (target + (config.frequency_deviation as u64 / 2))
-                    / config.frequency_deviation as u64
-                    - 256
-            } as u8;
-
-            #[cfg(feature = "defmt-03")]
-            defmt::trace!(
-                "Selected frequency deviation: {}",
-                compute_fdev(
+            let mut used_mantissa = u8::MAX;
+            let mut prev_fdev = 0;
+            for mantissa in (0..=u8::MAX).rev() {
+                let fdev = compute_fdev(
                     config.xtal_frequency,
-                    used_mantissa,
+                    mantissa,
                     used_exponent,
                     band_factor,
                     refdiv,
-                )
-            );
+                );
+
+                if fdev < config.frequency_deviation {
+                    used_mantissa = if config.frequency_deviation.abs_diff(fdev)
+                        < config.frequency_deviation.abs_diff(prev_fdev)
+                    {
+                        #[cfg(feature = "defmt-03")]
+                        defmt::trace!("Selected frequency deviation: {}", fdev);
+                        mantissa
+                    } else {
+                        #[cfg(feature = "defmt-03")]
+                        defmt::trace!("Selected frequency deviation: {}", prev_fdev);
+                        mantissa + 1
+                    };
+                    break;
+                } else {
+                    prev_fdev = fdev;
+                }
+            }
 
             this.ll()
                 .mod_1()
@@ -419,13 +428,14 @@ const fn compute_datarate(digital_frequency: u32, mantissa: u16, exponent: u8) -
     }
 }
 
-const fn compute_fdev(
-    xtal_freq: u32,
-    mantissa: u8,
-    exponent: u8,
-    band_factor: u32,
-    refdiv: u32,
+fn compute_fdev(
+    xtal_freq: u32,   // fXO
+    mantissa: u8,     // FDEV_M
+    exponent: u8,     // FDEV_E
+    band_factor: u32, // B
+    refdiv: u32,      // D
 ) -> u32 {
+    // (B/8)^-1
     let band_factor_div = if band_factor == HIGH_BAND_FACTOR {
         1
     } else {
@@ -434,16 +444,15 @@ const fn compute_fdev(
 
     match exponent {
         0 => {
-            ((xtal_freq as u64 * refdiv as u64
-                / band_factor_div
-                / (refdiv as u64 * band_factor as u64))
-                >> 19) as u32
+            let nom = xtal_freq as u64 * refdiv as u64 * mantissa as u64;
+            let denom = (1 << 19) * refdiv as u64 * band_factor as u64 * band_factor_div;
+            (nom / denom).try_into().unwrap()
         }
         e @ 1..16 => {
-            (xtal_freq as u64 * refdiv as u64 * (256 + mantissa as u64)
-                / band_factor_div
-                / (refdiv as u64 * band_factor as u64)
-                >> (20 - e)) as u32
+            let nom =
+                xtal_freq as u64 * refdiv as u64 * (256 + mantissa as u64) * (1 << (e as u64 - 1));
+            let denom = (1 << 19) * refdiv as u64 * band_factor as u64 * band_factor_div;
+            (nom / denom).try_into().unwrap()
         }
         _ => panic!("Illegal exponent value"),
     }
