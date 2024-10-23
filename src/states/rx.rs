@@ -33,7 +33,7 @@ where
 
             if irq_status.rx_data_ready() {
                 match select(
-                    self.device.fifo().read_async(&mut self.state.rx_buffer),
+                    self.device.fifo().read_async(self.state.rx_buffer),
                     self.delay.delay_ms(100),
                 )
                 .await

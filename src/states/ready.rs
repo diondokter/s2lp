@@ -16,6 +16,7 @@ where
     Gpio: InputPin + Wait,
     Delay: DelayNs,
 {
+    #[allow(clippy::too_many_arguments)]
     pub async fn set_basic_format(
         mut self,
         preamble_length: u16, // 0-2046

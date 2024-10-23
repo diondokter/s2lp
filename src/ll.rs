@@ -32,13 +32,6 @@ impl<Spi: SpiDevice> device_driver::AsyncRegisterInterface for DeviceInterface<S
         _size_bits: u32,
         data: &[u8],
     ) -> Result<(), Self::Error> {
-        // #[cfg(feature = "defmt-03")]
-        // defmt::trace!(
-        //     "Writing to register {:X} with value {:X}",
-        //     R::ADDRESS,
-        //     data.as_raw_slice()
-        // );
-
         Ok(self
             .spi
             .transaction(&mut [
@@ -54,22 +47,14 @@ impl<Spi: SpiDevice> device_driver::AsyncRegisterInterface for DeviceInterface<S
         _size_bits: u32,
         data: &mut [u8],
     ) -> Result<(), Self::Error> {
-        let result = self
-            .spi
+        self.spi
             .transaction(&mut [
                 Operation::Write(&[0b0000_0001, address]),
                 Operation::Read(data),
             ])
             .await?;
 
-        // #[cfg(feature = "defmt-03")]
-        // defmt::trace!(
-        //     "Reading from register {:X}, value {:X}",
-        //     R::ADDRESS,
-        //     data.as_raw_slice()
-        // );
-
-        Ok(result)
+        Ok(())
     }
 }
 
@@ -85,9 +70,6 @@ impl<Spi: SpiDevice> device_driver::AsyncCommandInterface for DeviceInterface<Sp
         _size_bits_out: u32,
         _output: &mut [u8],
     ) -> Result<(), Self::Error> {
-        // #[cfg(feature = "defmt-03")]
-        // defmt::trace!("Dispatching command: {:X}", id as u8);
-
         Ok(self
             .spi
             .transaction(&mut [Operation::Write(&[0b1000_0000, address])])

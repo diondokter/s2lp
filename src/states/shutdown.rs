@@ -1,5 +1,3 @@
-use core::u8;
-
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
 
@@ -106,7 +104,7 @@ where
                 while this.ll().mc_state_0().read_async().await?.state()? != State::Ready {}
             }
 
-            config.xtal_frequency / pd_clkdiv.then_some(2).unwrap_or(1)
+            config.xtal_frequency / if pd_clkdiv { 2 } else { 1 }
         };
 
         if !is_ch_bw(config.bandwidth, digital_frequency) {

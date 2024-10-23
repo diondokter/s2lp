@@ -13,7 +13,7 @@ pub struct Ready<PF> {
 }
 
 impl<PF> Ready<PF> {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self { _p: PhantomData }
     }
 }
