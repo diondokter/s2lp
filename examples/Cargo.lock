@@ -211,10 +211,8 @@ dependencies = [
 [[package]]
 name = "dd-manifest-tree"
 version = "0.1.0"
-source = "git+https://github.com/diondokter/device-driver.git?rev=5dbdce1#5dbdce11b04c38c73b49799ac8f5d6d60674e577"
+source = "git+https://github.com/diondokter/device-driver.git?rev=0ddc2fc8411e25f50cdfc020acb1d5c4ebc7f954#0ddc2fc8411e25f50cdfc020acb1d5c4ebc7f954"
 dependencies = [
- "serde_json",
- "toml",
  "yaml-rust2",
 ]
 
@@ -263,7 +261,7 @@ dependencies = [
 [[package]]
 name = "device-driver"
 version = "0.7.0"
-source = "git+https://github.com/diondokter/device-driver.git?rev=5dbdce1#5dbdce11b04c38c73b49799ac8f5d6d60674e577"
+source = "git+https://github.com/diondokter/device-driver.git?rev=0ddc2fc8411e25f50cdfc020acb1d5c4ebc7f954#0ddc2fc8411e25f50cdfc020acb1d5c4ebc7f954"
 dependencies = [
  "bitvec",
  "device-driver-macros",
@@ -274,7 +272,7 @@ dependencies = [
 [[package]]
 name = "device-driver-generation"
 version = "0.7.0"
-source = "git+https://github.com/diondokter/device-driver.git?rev=5dbdce1#5dbdce11b04c38c73b49799ac8f5d6d60674e577"
+source = "git+https://github.com/diondokter/device-driver.git?rev=0ddc2fc8411e25f50cdfc020acb1d5c4ebc7f954#0ddc2fc8411e25f50cdfc020acb1d5c4ebc7f954"
 dependencies = [
  "anyhow",
  "bitvec",
@@ -289,7 +287,7 @@ dependencies = [
 [[package]]
 name = "device-driver-macros"
 version = "0.7.0"
-source = "git+https://github.com/diondokter/device-driver.git?rev=5dbdce1#5dbdce11b04c38c73b49799ac8f5d6d60674e577"
+source = "git+https://github.com/diondokter/device-driver.git?rev=0ddc2fc8411e25f50cdfc020acb1d5c4ebc7f954#0ddc2fc8411e25f50cdfc020acb1d5c4ebc7f954"
 dependencies = [
  "device-driver-generation",
  "proc-macro2",
@@ -598,12 +596,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "equivalent"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
-
-[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -689,16 +681,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 
 [[package]]
-name = "indexmap"
-version = "2.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "168fb715dda47215e360912c096649d23d58bf392ac62f73919e831745e40f26"
-dependencies = [
- "equivalent",
- "hashbrown",
-]
-
-[[package]]
 name = "itertools"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -708,22 +690,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "itoa"
-version = "1.0.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49f1f14873335454500d59611f1cf4a4b0f786f9ac11f4312a78e4cf2566695b"
-
-[[package]]
 name = "litrs"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4ce301924b7887e9d637144fdade93f9dfff9b60981d4ac161db09720d39aa5"
-
-[[package]]
-name = "memchr"
-version = "2.7.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
 
 [[package]]
 name = "nb"
@@ -847,12 +817,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ryu"
-version = "1.0.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3cb5ba0dc43242ce17de99c180e96db90b235b8a9fdc9543c96d2209116bd9f"
-
-[[package]]
 name = "s2lp"
 version = "0.1.0"
 dependencies = [
@@ -883,48 +847,6 @@ name = "semver-parser"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
-
-[[package]]
-name = "serde"
-version = "1.0.203"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7253ab4de971e72fb7be983802300c30b5a7f0c2e56fab8abfc6a214307c0094"
-dependencies = [
- "serde_derive",
-]
-
-[[package]]
-name = "serde_derive"
-version = "1.0.203"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "500cbc0ebeb6f46627f50f3f5811ccf6bf00643be300b4c3eabc0ef55dc5b5ba"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.66",
-]
-
-[[package]]
-name = "serde_json"
-version = "1.0.130"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "610f75ff4a8e3cb29b85da56eabdd1bff5b06739059a4b8e2967fef32e5d9944"
-dependencies = [
- "indexmap",
- "itoa",
- "memchr",
- "ryu",
- "serde",
-]
-
-[[package]]
-name = "serde_spanned"
-version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87607cb1398ed59d48732e575a4c28a7a8ebf2454b964fe3f224f2afc07909e1"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "stable_deref_trait"
@@ -1028,41 +950,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "toml"
-version = "0.8.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1ed1f98e3fdc28d6d910e6737ae6ab1a93bf1985935a1193e68f93eeb68d24e"
-dependencies = [
- "indexmap",
- "serde",
- "serde_spanned",
- "toml_datetime",
- "toml_edit",
-]
-
-[[package]]
-name = "toml_datetime"
-version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0dd7358ecb8fc2f8d014bf86f6f638ce72ba252a2c3a2572f2a795f1d23efb41"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "toml_edit"
-version = "0.22.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "583c44c02ad26b0c3f3066fe629275e50627026c51ac2e595cca4c230ce1ce1d"
-dependencies = [
- "indexmap",
- "serde",
- "serde_spanned",
- "toml_datetime",
- "winnow",
-]
-
-[[package]]
 name = "unicode-ident"
 version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1099,15 +986,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "de437e2a6208b014ab52972a27e59b33fa2920d3e00fe05026167a1c509d19cc"
 dependencies = [
  "vcell",
-]
-
-[[package]]
-name = "winnow"
-version = "0.6.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36c1fec1a2bb5866f07c25f68c26e565c4c200aebb96d7e55710c19d3e8ac49b"
-dependencies = [
- "memchr",
 ]
 
 [[package]]
