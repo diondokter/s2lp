@@ -9,11 +9,20 @@ use s2lp::{
 use stm32u0_examples::{init_board, Board};
 use {defmt_rtt as _, panic_probe as _};
 
+use s2lp::AsyncRegisterInterface;
+
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
     let Board { s2, .. } = init_board().await;
 
-    let s2 = s2.init(Config::default()).await.unwrap();
+    let mut s2 = s2.init(Config::default()).await.unwrap();
+
+    let mut buffer = [0; 0xFB];
+    for a in 0..=0xFA {
+        s2.interface().read_register(a, 8, &mut buffer[a as usize..=a as usize]).await.unwrap();
+    }
+
+    defmt::println!("{:02X}", buffer);
 
     let mut s2 = s2
         .set_basic_format(

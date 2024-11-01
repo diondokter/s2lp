@@ -8,6 +8,7 @@ use ll::{Device, DeviceError, DeviceInterface};
 pub mod ll;
 pub mod packet_format;
 pub mod states;
+pub use device_driver::AsyncRegisterInterface;
 
 #[derive(Debug)]
 pub struct S2lp<State, Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait, Delay: DelayNs> {
@@ -32,6 +33,10 @@ impl<State, Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait, Delay: DelayN
             delay: self.delay,
             state: next_state,
         }
+    }
+
+    pub fn interface(&mut self) -> &mut DeviceInterface<Spi> {
+        &mut self.device.interface
     }
 }
 
