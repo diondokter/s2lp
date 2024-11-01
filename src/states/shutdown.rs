@@ -169,13 +169,17 @@ where
                 .await?;
         }
 
+        // Datasheet 5.3.1
+        {
+            this.ll()
+                .synt()
+                .modify_async(|reg| reg.set_bs(is_frequency_band_middle(config.base_frequency)))
+                .await?;
+        }
+
         // Datasheet 5.4.1 - Configure the frequency modulation
         {
-            let band_factor = if this.ll().synt().read_async().await?.bs() {
-                HIGH_BAND_FACTOR
-            } else {
-                MIDDLE_BAND_FACTOR
-            };
+            let band_factor = get_band_factor(config.base_frequency);
 
             let refdiv = if this.ll().xo_rco_conf_0().read_async().await?.refdiv() {
                 2
@@ -278,11 +282,7 @@ where
 
         // Set the synt word (base frequency) and charge pump
         {
-            let band_factor = if this.ll().synt().read_async().await?.bs() {
-                HIGH_BAND_FACTOR
-            } else {
-                MIDDLE_BAND_FACTOR
-            };
+            let band_factor = get_band_factor(config.base_frequency);
 
             let refdiv = if this.ll().xo_rco_conf_0().read_async().await?.refdiv() {
                 2
@@ -313,7 +313,7 @@ where
                 .synt()
                 .modify_async(|reg| {
                     reg.set_synt(synt);
-                    reg.set_pll_cp_isel(cp_isel)
+                    reg.set_pll_cp_isel(cp_isel);
                 })
                 .await?;
         }
@@ -364,16 +364,24 @@ impl Default for Config {
     }
 }
 
-const fn is_frequency_band(freq: u32) -> bool {
-    is_frequency_band_high(freq) || is_frequency_band_middle(freq)
+const fn is_frequency_band(base_frequency: u32) -> bool {
+    is_frequency_band_high(base_frequency) || is_frequency_band_middle(base_frequency)
 }
 
-const fn is_frequency_band_high(freq: u32) -> bool {
-    freq >= HIGH_BAND_LOWER_LIMIT && freq <= HIGH_BAND_UPPER_LIMIT
+const fn is_frequency_band_high(base_frequency: u32) -> bool {
+    base_frequency >= HIGH_BAND_LOWER_LIMIT && base_frequency <= HIGH_BAND_UPPER_LIMIT
 }
 
-const fn is_frequency_band_middle(freq: u32) -> bool {
-    freq >= MIDDLE_BAND_LOWER_LIMIT && freq <= MIDDLE_BAND_UPPER_LIMIT
+const fn is_frequency_band_middle(base_frequency: u32) -> bool {
+    base_frequency >= MIDDLE_BAND_LOWER_LIMIT && base_frequency <= MIDDLE_BAND_UPPER_LIMIT
+}
+
+const fn get_band_factor(base_frequency: u32) -> u32 {
+    if is_frequency_band_high(base_frequency) {
+        HIGH_BAND_FACTOR
+    } else {
+        MIDDLE_BAND_FACTOR
+    }
 }
 
 const fn is_datarate(datarate: u32, xtal_freq: u32) -> bool {
