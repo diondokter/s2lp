@@ -173,9 +173,8 @@ impl<Spi> core::ops::DerefMut for DeviceError<Spi> {
 mod tests {
     use super::*;
     use embedded_hal_mock::eh1::spi;
-    use futures_test::test;
 
-    #[test]
+    #[futures_test::test]
     async fn read_chip_id() {
         let mut spi_device = spi::Mock::new(&[
             spi::Transaction::transaction_start(),
@@ -197,5 +196,12 @@ mod tests {
         assert_eq!(partnum, 0x03);
 
         spi_device.done();
+    }
+
+    #[test]
+    fn display() {
+        let rust = McState1::from([0x01]);
+        let c = McState1::from([0xE9]);
+        pretty_assertions::assert_eq!(rust, c);
     }
 }

@@ -16,3 +16,4 @@ defmt-03 = ["dep:defmt"]
 [dev-dependencies]
 embedded-hal-mock = { version = "0.11.1", features = ["embedded-hal-async"] }
 futures-test = "0.3.31"
+pretty_assertions = "1.4.1"
