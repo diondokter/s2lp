@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 
+use defmt::unwrap;
 use embassy_executor::Spawner;
 use s2lp::states::shutdown::Config;
 use stm32u0_examples::{init_board, Board};
@@ -10,22 +11,10 @@ use {defmt_rtt as _, panic_probe as _};
 async fn main(_spawner: Spawner) -> ! {
     let Board { s2, .. } = init_board().await;
 
-    let mut s2 = s2.init(Config::default()).await.unwrap();
+    let mut s2 = unwrap!(s2.init(Config::default()).await);
 
-    let version = s2
-        .ll()
-        .device_info_0()
-        .read_async()
-        .await
-        .unwrap()
-        .version();
-    let partnum = s2
-        .ll()
-        .device_info_1()
-        .read_async()
-        .await
-        .unwrap()
-        .partnum();
+    let version = unwrap!(s2.ll().device_info_0().read_async().await).version();
+    let partnum = unwrap!(s2.ll().device_info_1().read_async().await).partnum();
 
     defmt::info!("Version: {:X}, partnum: {:X}", version, partnum);
     defmt::assert_eq!(version, 0xC1);

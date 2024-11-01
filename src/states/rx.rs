@@ -29,7 +29,7 @@ where
             let irq_status = self.ll().irq_status().read_async().await?;
 
             #[cfg(feature = "defmt-03")]
-            defmt::trace!("RX wait interrupt: {}", defmt::Debug2Format(&irq_status));
+            defmt::trace!("RX wait interrupt: {}", irq_status);
 
             if irq_status.rx_data_ready() {
                 match select(

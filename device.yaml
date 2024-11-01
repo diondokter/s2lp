@@ -3,6 +3,7 @@ config:
   buffer_address_type: u8
   command_address_type: u8
   register_address_type: u8
+  defmt_feature: "defmt-03"
 
 fifo:
   type: buffer

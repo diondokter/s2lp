@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 
+use defmt::unwrap;
 use embassy_executor::Spawner;
 use s2lp::{
     ll::CrcMode,
@@ -13,10 +14,10 @@ use {defmt_rtt as _, panic_probe as _};
 async fn main(_spawner: Spawner) -> ! {
     let Board { s2, .. } = init_board().await;
 
-    let s2 = s2.init(Config::default()).await.unwrap();
+    let s2 = unwrap!(s2.init(Config::default()).await);
 
-    let mut s2 = s2
-        .set_basic_format(
+    let mut s2 = unwrap!(
+        s2.set_basic_format(
             128,
             PreamblePattern::Pattern0,
             32,
@@ -27,12 +28,12 @@ async fn main(_spawner: Spawner) -> ! {
             Default::default(),
         )
         .await
-        .unwrap();
+    );
 
     let mut buf = [0; 128];
-    let mut rx_s2 = s2.start_receive(&mut buf).await.unwrap();
-    let rx_result = rx_s2.wait().await.unwrap();
-    s2 = rx_s2.finish().await.ok().unwrap();
+    let mut rx_s2 = unwrap!(s2.start_receive(&mut buf).await);
+    let rx_result = unwrap!(rx_s2.wait().await);
+    s2 = unwrap!(rx_s2.finish().await.ok());
 
     defmt::info!("Packet has been Received! ({:a})", rx_result);
 

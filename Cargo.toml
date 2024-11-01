@@ -4,14 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-device-driver = { git = "https://github.com/diondokter/device-driver.git", rev = "0ddc2fc8411e25f50cdfc020acb1d5c4ebc7f954", default-features = false, features = ["yaml"] }
+device-driver = { git = "https://github.com/diondokter/device-driver.git", rev = "e33a8f7583e404fdd894b1a9afb54d2fca86a2b8", default-features = false, features = ["yaml"] }
 embedded-hal = "1.0.0"
 embedded-hal-async = "1.0.0"
 defmt = { version = "0.3", optional = true }
 embassy-futures = { version = "0.1.1", default-features = false }
 
 [features]
-defmt-03 = ["dep:defmt"]
+defmt-03 = ["dep:defmt", "device-driver/defmt-03"]
 
 [dev-dependencies]
 embedded-hal-mock = { version = "0.11.1", features = ["embedded-hal-async"] }

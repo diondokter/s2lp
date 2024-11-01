@@ -31,7 +31,7 @@ where
                     #[cfg(feature = "defmt-03")]
                     defmt::error!(
                         "TX wait timeout out in state: {}",
-                        defmt::Debug2Format(&state)
+                        state
                     );
                     match state {
                         Ok(State::Lockst) | Err(_) => return Err(Error::BadState),
@@ -44,7 +44,7 @@ where
             let irq_status = self.ll().irq_status().read_async().await?;
 
             #[cfg(feature = "defmt-03")]
-            defmt::trace!("TX wait interrupt: {}", defmt::Debug2Format(&irq_status));
+            defmt::trace!("TX wait interrupt: {}", irq_status);
 
             if irq_status.tx_fifo_error() {
                 self.ll().abort().dispatch_async().await?;

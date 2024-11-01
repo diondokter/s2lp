@@ -423,13 +423,16 @@ const MAXIMUM_DATARATE: u64 = 250000;
 /// Digital domain logic threshold for XTAL in MHz
 const DIG_DOMAIN_XTAL_THRESH: u32 = 30000000;
 
-const fn compute_datarate(digital_frequency: u32, mantissa: u16, exponent: u8) -> u32 {
+fn compute_datarate(digital_frequency: u32, mantissa: u16, exponent: u8) -> u32 {
     match exponent {
         0 => ((digital_frequency as u64 * mantissa as u64) >> 32) as u32,
         e @ 1..15 => {
             ((digital_frequency as u64 * (65536 + mantissa as u64)) >> (33 - e) as u64) as u32
         }
         15 => digital_frequency / (8 * mantissa as u32),
+        #[cfg(feature = "defmt-03")]
+        _ => defmt::panic!("Illegal exponent value"),
+        #[cfg(not(feature = "defmt-03"))]
         _ => panic!("Illegal exponent value"),
     }
 }
@@ -460,6 +463,9 @@ fn compute_fdev(
             let denom = (1 << 19) * refdiv as u64 * band_factor as u64 * band_factor_div;
             (nom / denom).try_into().unwrap()
         }
+        #[cfg(feature = "defmt-03")]
+        _ => defmt::panic!("Illegal exponent value"),
+        #[cfg(not(feature = "defmt-03"))]
         _ => panic!("Illegal exponent value"),
     }
 }
