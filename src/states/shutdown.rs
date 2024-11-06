@@ -85,8 +85,8 @@ where
         let digital_frequency = {
             let mut pd_clkdiv = this.ll().xo_rco_conf_1().read_async().await?.pd_clkdiv();
 
-            if (config.xtal_frequency < DIG_DOMAIN_XTAL_THRESH && pd_clkdiv)
-                || (config.xtal_frequency > DIG_DOMAIN_XTAL_THRESH && !pd_clkdiv)
+            if (config.xtal_frequency < DIG_DOMAIN_XTAL_THRESH && !pd_clkdiv)
+                || (config.xtal_frequency > DIG_DOMAIN_XTAL_THRESH && pd_clkdiv)
             {
                 // Go to standby
                 this.ll().standby().dispatch_async().await?;
@@ -104,7 +104,7 @@ where
                 while this.ll().mc_state_0().read_async().await?.state()? != State::Ready {}
             }
 
-            config.xtal_frequency / if pd_clkdiv { 2 } else { 1 }
+            config.xtal_frequency / if pd_clkdiv { 1 } else { 2 }
         };
 
         if !is_ch_bw(config.bandwidth, digital_frequency) {
