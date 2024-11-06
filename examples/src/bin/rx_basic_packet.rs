@@ -4,8 +4,8 @@
 use defmt::unwrap;
 use embassy_executor::Spawner;
 use s2lp::{
-    ll::CrcMode,
-    states::{ready::PreamblePattern, shutdown::Config},
+    ll::{CrcMode, LenWid},
+    states::{ready::PreamblePattern, rx::RxResult, shutdown::Config},
 };
 use stm32u0_examples::{init_board, Board};
 use {defmt_rtt as _, panic_probe as _};
@@ -23,6 +23,7 @@ async fn main(_spawner: Spawner) -> ! {
             32,
             0x12345678,
             false,
+            LenWid::Bytes1,
             0,
             CrcMode::NoCrc,
             Default::default(),
@@ -30,14 +31,19 @@ async fn main(_spawner: Spawner) -> ! {
         .await
     );
 
-    let mut buf = [0; 128];
-    let mut rx_s2 = unwrap!(s2.start_receive(&mut buf).await);
-    let rx_result = unwrap!(rx_s2.wait().await);
-    s2 = unwrap!(rx_s2.finish().await.ok());
-
-    defmt::info!("Packet has been Received! ({:a})", rx_result);
+    let mut index = 0;
 
     loop {
-        cortex_m::asm::bkpt();
+        let mut buf = [0; 128];
+        let mut rx_s2 = unwrap!(s2.start_receive(&mut buf).await);
+        let rx_result = unwrap!(rx_s2.wait().await);
+        s2 = unwrap!(rx_s2.finish().await.ok());
+
+        defmt::info!("Packet {} has been Received! ({:a})", index, rx_result);
+        index += 1;
+
+        if let RxResult::Ok(len) = rx_result {
+            defmt::info!("Received: {:a}", &buf[..len])
+        }
     }
 }

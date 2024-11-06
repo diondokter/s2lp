@@ -29,10 +29,7 @@ where
                     // Timeout. Check for bad state
                     let state = self.ll().mc_state_0().read_async().await?.state();
                     #[cfg(feature = "defmt-03")]
-                    defmt::error!(
-                        "TX wait timeout out in state: {}",
-                        state
-                    );
+                    defmt::error!("TX wait timeout out in state: {}", state);
                     match state {
                         Ok(State::Lockst) | Err(_) => return Err(Error::BadState),
                         _ => {}

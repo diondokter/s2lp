@@ -1,4 +1,3 @@
-use embassy_futures::select::{select, Either};
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
 
@@ -31,29 +30,45 @@ where
             #[cfg(feature = "defmt-03")]
             defmt::trace!("RX wait interrupt: {}", irq_status);
 
-            if irq_status.rx_data_ready() {
-                match select(
-                    self.device.fifo().read_async(self.state.rx_buffer),
-                    self.delay.delay_ms(100),
-                )
-                .await
-                {
-                    Either::First(received) => {
-                        let received = received?;
-                        self.state.written += received;
-                        #[cfg(feature = "defmt-03")]
-                        defmt::trace!(
-                            "Received {} bytes (total = {}) {:X}",
-                            received,
-                            self.state.written,
-                            &self.state.rx_buffer[..self.state.written]
-                        );
-                    }
-                    Either::Second(_) => {
-                        #[cfg(feature = "defmt-03")]
-                        defmt::error!("Timeout reading the RX fifo");
-                    }
+            if irq_status.rx_data_disc()
+                || irq_status.rx_fifo_error()
+                || self.state.written == self.state.rx_buffer.len()
+            {
+                self.device.abort().dispatch_async().await?;
+                self.device.flush_rx_fifo().dispatch_async().await?;
+                self.state.rx_done = true;
+
+                if self.state.written == self.state.rx_buffer.len() {
+                    return Ok(RxResult::TooBigForBuffer);
+                } else if irq_status.rx_fifo_error() {
+                    return Ok(RxResult::RxFifo);
+                } else if irq_status.rx_data_disc() {
+                    return Ok(RxResult::RxDiscarded);
+                } else {
+                    unreachable!()
                 }
+            }
+
+            if irq_status.rx_data_ready() || irq_status.rx_fifo_almost_full() {
+                let received = self
+                    .device
+                    .fifo()
+                    .read_async(&mut self.state.rx_buffer[self.state.written..])
+                    .await?;
+                self.state.written += received;
+
+                #[cfg(feature = "defmt-03")]
+                defmt::trace!(
+                    "Received {} bytes (total = {}) {:X}",
+                    received,
+                    self.state.written,
+                    &self.state.rx_buffer[..self.state.written]
+                );
+            }
+
+            if irq_status.rx_data_ready() {
+                self.state.rx_done = true;
+                return Ok(RxResult::Ok(self.state.written));
             }
 
             if irq_status.valid_sync() {
@@ -94,4 +109,10 @@ pub enum RxResult {
     Ok(usize),
     /// The reception was already done previously
     RxAlreadyDone,
+    /// The RX fifo filled up too fast and we couldn't keep up
+    RxFifo,
+    /// While receiving the packet, it got filtered out
+    RxDiscarded,
+    /// The received message was bigger than the given buffer
+    TooBigForBuffer,
 }

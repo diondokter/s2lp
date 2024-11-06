@@ -211,7 +211,7 @@ dependencies = [
 [[package]]
 name = "dd-manifest-tree"
 version = "0.1.0"
-source = "git+https://github.com/diondokter/device-driver.git?rev=e33a8f7583e404fdd894b1a9afb54d2fca86a2b8#e33a8f7583e404fdd894b1a9afb54d2fca86a2b8"
+source = "git+https://github.com/diondokter/device-driver.git#2809b146a04339490d4807ee82784ec6873f279b"
 dependencies = [
  "yaml-rust2",
 ]
@@ -261,7 +261,7 @@ dependencies = [
 [[package]]
 name = "device-driver"
 version = "0.7.0"
-source = "git+https://github.com/diondokter/device-driver.git?rev=e33a8f7583e404fdd894b1a9afb54d2fca86a2b8#e33a8f7583e404fdd894b1a9afb54d2fca86a2b8"
+source = "git+https://github.com/diondokter/device-driver.git#2809b146a04339490d4807ee82784ec6873f279b"
 dependencies = [
  "bitvec",
  "defmt",
@@ -273,7 +273,7 @@ dependencies = [
 [[package]]
 name = "device-driver-generation"
 version = "0.7.0"
-source = "git+https://github.com/diondokter/device-driver.git?rev=e33a8f7583e404fdd894b1a9afb54d2fca86a2b8#e33a8f7583e404fdd894b1a9afb54d2fca86a2b8"
+source = "git+https://github.com/diondokter/device-driver.git#2809b146a04339490d4807ee82784ec6873f279b"
 dependencies = [
  "anyhow",
  "bitvec",
@@ -288,7 +288,7 @@ dependencies = [
 [[package]]
 name = "device-driver-macros"
 version = "0.7.0"
-source = "git+https://github.com/diondokter/device-driver.git?rev=e33a8f7583e404fdd894b1a9afb54d2fca86a2b8#e33a8f7583e404fdd894b1a9afb54d2fca86a2b8"
+source = "git+https://github.com/diondokter/device-driver.git#2809b146a04339490d4807ee82784ec6873f279b"
 dependencies = [
  "device-driver-generation",
  "proc-macro2",

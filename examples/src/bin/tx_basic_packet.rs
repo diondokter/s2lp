@@ -4,7 +4,7 @@
 use defmt::unwrap;
 use embassy_executor::Spawner;
 use s2lp::{
-    ll::CrcMode,
+    ll::{CrcMode, LenWid},
     states::{ready::PreamblePattern, shutdown::Config},
 };
 use stm32u0_examples::{init_board, Board};
@@ -23,6 +23,7 @@ async fn main(_spawner: Spawner) -> ! {
             32,
             0x12345678,
             false,
+            LenWid::Bytes1,
             0,
             CrcMode::NoCrc,
             Default::default(),
@@ -30,13 +31,13 @@ async fn main(_spawner: Spawner) -> ! {
         .await
     );
 
-    let mut tx_s2 = unwrap!(s2.send_packet(Some(0xAA), b"Hello from S2!!").await);
-    let tx_result = unwrap!(tx_s2.wait().await);
-    s2 = unwrap!(tx_s2.finish().await.ok());
-
-    defmt::info!("Packet has been sent! ({})", tx_result);
-
     loop {
-        cortex_m::asm::bkpt();
+        let mut tx_s2 = unwrap!(s2.send_packet(None, b"Hello from S2!!").await);
+        let tx_result = unwrap!(tx_s2.wait().await);
+        s2 = unwrap!(tx_s2.finish().await.ok());
+
+        defmt::info!("Packet has been sent! ({})", tx_result);
+
+        embassy_time::Timer::after_millis(500).await;
     }
 }

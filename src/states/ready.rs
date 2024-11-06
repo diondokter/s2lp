@@ -24,10 +24,16 @@ where
         sync_length: u8, // 0-32
         sync_pattern: u32,
         include_address: bool,
+        packet_length_encoding: LenWid,
         postamble_length: u8, // In pairs of `01`'s
         crc_mode: CrcMode,
         packet_filter: PacketFilteringOptions,
     ) -> Result<S2lp<Ready<Basic>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
+        self.ll()
+            .ant_select_conf()
+            .modify_async(|reg| reg.set_cs_blanking(true))
+            .await?;
+
         self.ll()
             .pckt_ctrl_6()
             .write_async(|reg| {
@@ -40,7 +46,7 @@ where
             .pckt_ctrl_4()
             .write_async(|reg| {
                 reg.set_address_len(include_address);
-                reg.set_len_wid(LenWid::Bytes2)
+                reg.set_len_wid(packet_length_encoding);
             })
             .await?;
 
@@ -170,29 +176,27 @@ where
         destination_address: Option<u8>,
         payload: &[u8],
     ) -> Result<S2lp<Tx<Basic>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
-        if payload.len() > (u16::MAX - destination_address.is_some() as u16) as usize {
+        let pckt_ctrl_4 = self.ll().pckt_ctrl_4().read_async().await?;
+        let address_included = pckt_ctrl_4.address_len();
+        let max_packet_len = match pckt_ctrl_4.len_wid() {
+            LenWid::Bytes1 => u8::MAX as u16,
+            LenWid::Bytes2 => u16::MAX,
+        };
+
+        if payload.len() > (max_packet_len - address_included as u16) as usize {
             return Err(Error::BufferTooLarge);
         }
 
-        // Set length and address inclusion
-        self.ll()
-            .pckt_ctrl_4()
-            .modify_async(|reg| {
-                reg.set_address_len(destination_address.is_some());
-                reg.set_len_wid(
-                    if (payload.len() - destination_address.is_some() as usize) <= 255 {
-                        LenWid::Bytes1
-                    } else {
-                        LenWid::Bytes2
-                    },
-                )
-            })
-            .await?;
+        if address_included != destination_address.is_some() {
+            return Err(Error::BadConfig {
+                reason: "Given address different from config",
+            });
+        }
 
         // Set the packet lenght
         self.ll()
             .pckt_len()
-            .write_async(|reg| reg.set_value(payload.len() as u16 + 1))
+            .write_async(|reg| reg.set_value(payload.len() as u16 + address_included as u16))
             .await?;
 
         // Set the destination address
@@ -298,9 +302,9 @@ impl Default for PacketFilteringOptions {
     fn default() -> Self {
         Self {
             discard_bad_crc: true,
-            source_address: Some(0xAA),
+            source_address: None,
             multicast_address: None,
-            broadcast_address: Some(0xFF),
+            broadcast_address: None,
         }
     }
 }
