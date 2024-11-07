@@ -5,7 +5,11 @@ use defmt::unwrap;
 use embassy_executor::Spawner;
 use s2lp::{
     ll::{CrcMode, LenWid},
-    states::{ready::PreamblePattern, rx::RxResult, shutdown::Config},
+    states::{
+        ready::{PacketFilteringOptions, PreamblePattern},
+        rx::RxResult,
+        shutdown::Config,
+    },
 };
 use stm32u0_examples::{init_board, Board};
 use {defmt_rtt as _, panic_probe as _};
@@ -22,11 +26,14 @@ async fn main(_spawner: Spawner) -> ! {
             PreamblePattern::Pattern0,
             32,
             0x12345678,
-            false,
+            true,
             LenWid::Bytes1,
             0,
-            CrcMode::NoCrc,
-            Default::default(),
+            CrcMode::CrcPoly0X1021,
+            PacketFilteringOptions {
+                source_address: Some(0xAA),
+                ..Default::default()
+            },
         )
         .await
     );
@@ -42,8 +49,8 @@ async fn main(_spawner: Spawner) -> ! {
         defmt::info!("Packet {} has been Received! ({:a})", index, rx_result);
         index += 1;
 
-        if let RxResult::Ok(len) = rx_result {
-            defmt::info!("Received: {:a}", &buf[..len])
+        if let RxResult::Ok { packet_size, .. } = rx_result {
+            defmt::info!("Received: {:a}", &buf[..packet_size])
         }
     }
 }

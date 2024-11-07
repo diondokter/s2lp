@@ -1,11 +1,14 @@
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
 
-use crate::{Error, ErrorOf, S2lp};
+use crate::{
+    packet_format::{PacketFormat, RxMetaData},
+    Error, ErrorOf, S2lp,
+};
 
 use super::{Ready, Rx};
 
-impl<'buffer, Spi, Sdn, Gpio, Delay, PF> S2lp<Rx<'buffer, PF>, Spi, Sdn, Gpio, Delay>
+impl<'buffer, Spi, Sdn, Gpio, Delay, PF: PacketFormat> S2lp<Rx<'buffer, PF>, Spi, Sdn, Gpio, Delay>
 where
     Spi: SpiDevice,
     Sdn: OutputPin,
@@ -15,7 +18,7 @@ where
     /// Wait for the receive to be done.
     ///
     /// After this is done, call [Self::stop] to get back the radio in the ready state.
-    pub async fn wait(&mut self) -> Result<RxResult, ErrorOf<Self>> {
+    pub async fn wait(&mut self) -> Result<RxResult<PF::RxMetaData>, ErrorOf<Self>> {
         if self.state.rx_done {
             return Ok(RxResult::RxAlreadyDone);
         }
@@ -41,9 +44,11 @@ where
                 if self.state.written == self.state.rx_buffer.len() {
                     return Ok(RxResult::TooBigForBuffer);
                 } else if irq_status.rx_fifo_error() {
-                    return Ok(RxResult::RxFifo);
+                    return Ok(RxResult::Fifo);
+                } else if irq_status.crc_error() {
+                    return Ok(RxResult::CrcError);
                 } else if irq_status.rx_data_disc() {
-                    return Ok(RxResult::RxDiscarded);
+                    return Ok(RxResult::Discarded);
                 } else {
                     unreachable!()
                 }
@@ -68,7 +73,11 @@ where
 
             if irq_status.rx_data_ready() {
                 self.state.rx_done = true;
-                return Ok(RxResult::Ok(self.state.written));
+                return Ok(RxResult::Ok {
+                    packet_size: self.state.written,
+                    rssi_value: self.device.rssi_level().read_async().await?.value() as i16 - 146,
+                    meta_data: PF::RxMetaData::read_from_device(&mut self.device).await?,
+                });
             }
 
             if irq_status.valid_sync() {
@@ -104,15 +113,21 @@ where
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
-pub enum RxResult {
-    /// All went fine and the packet is sent
-    Ok(usize),
+pub enum RxResult<MetaData> {
+    /// All went fine and the packet is received
+    Ok {
+        packet_size: usize,
+        rssi_value: i16,
+        meta_data: MetaData,
+    },
     /// The reception was already done previously
     RxAlreadyDone,
     /// The RX fifo filled up too fast and we couldn't keep up
-    RxFifo,
+    Fifo,
     /// While receiving the packet, it got filtered out
-    RxDiscarded,
+    Discarded,
+    /// The received packet has a bad CRC
+    CrcError,
     /// The received message was bigger than the given buffer
     TooBigForBuffer,
 }

@@ -291,11 +291,26 @@ pub enum PreamblePattern {
     Pattern3,
 }
 
+/// Setup the filters.
+///
+/// If none of the address filters are set, then no filtering will be done on the address and
+/// all packets will be received.
 pub struct PacketFilteringOptions {
-    discard_bad_crc: bool,
-    source_address: Option<u8>,
-    multicast_address: Option<u8>,
-    broadcast_address: Option<u8>,
+    /// If true, packets with a bad CRC will be filtered out.
+    /// Ignored if no CRC is enabled.
+    pub discard_bad_crc: bool,
+    /// The address of *this* device.
+    ///
+    /// If Some, the filtering will be turned on and packets with this destination address will not be discarded.
+    pub source_address: Option<u8>,
+    /// The address of the multicast group this device is part of.
+    ///
+    /// If Some, the filtering will be turned on and packets with this destination address will not be discarded.
+    pub multicast_address: Option<u8>,
+    /// The broadcast address.
+    ///
+    /// If Some, the filtering will be turned on and packets with this destination address will not be discarded.
+    pub broadcast_address: Option<u8>,
 }
 
 impl Default for PacketFilteringOptions {

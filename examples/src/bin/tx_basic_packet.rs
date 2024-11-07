@@ -22,22 +22,22 @@ async fn main(_spawner: Spawner) -> ! {
             PreamblePattern::Pattern0,
             32,
             0x12345678,
-            false,
+            true,
             LenWid::Bytes1,
             0,
-            CrcMode::NoCrc,
+            CrcMode::CrcPoly0X1021,
             Default::default(),
         )
         .await
     );
 
     loop {
-        let mut tx_s2 = unwrap!(s2.send_packet(None, b"Hello from S2!!").await);
+        let mut tx_s2 = unwrap!(s2.send_packet(Some(0xAA), b"Hello from Rust!!").await);
         let tx_result = unwrap!(tx_s2.wait().await);
         s2 = unwrap!(tx_s2.finish().await.ok());
 
         defmt::info!("Packet has been sent! ({})", tx_result);
 
-        embassy_time::Timer::after_millis(500).await;
+        embassy_time::Timer::after_millis(2000).await;
     }
 }
