@@ -470,7 +470,7 @@ fn compute_fdev(
     }
 }
 
-fn search_channel_filter_bandwidth(target_bw: u32, dig_freq: u32) -> crate::ll::ChFlt {
+fn search_channel_filter_bandwidth(target_bw: u32, dig_freq: u32) -> crate::ll::field_sets::ChFlt {
     // Datasheet Table 44
     // Every unit is 100hz
     const CHANNEL_FILTER_WORDS: [u16; 90] = [
@@ -501,7 +501,7 @@ fn search_channel_filter_bandwidth(target_bw: u32, dig_freq: u32) -> crate::ll::
         word_to_bandwidth(CHANNEL_FILTER_WORDS[best_index])
     );
 
-    let mut w = crate::ll::ChFlt::new_zero();
+    let mut w = crate::ll::field_sets::ChFlt::new_zero();
 
     w.set_ch_flt_e(best_index as u8 / 9);
     w.set_ch_flt_m(best_index as u8 % 9);

@@ -92,7 +92,7 @@ impl<Spi: SpiDevice> device_driver::AsyncBufferInterface for DeviceInterface<Spi
         let tx_free_space = loop {
             let mut tx_fifo_status = [0];
             self.read_register(0x8F, 8, &mut tx_fifo_status).await?;
-            let tx_fifo_status: TxFifoStatus = tx_fifo_status.into();
+            let tx_fifo_status: field_sets::TxFifoStatus = tx_fifo_status.into();
 
             let space = 128 - tx_fifo_status.n_elem_txfifo();
 
@@ -121,7 +121,7 @@ impl<Spi: SpiDevice> device_driver::AsyncBufferInterface for DeviceInterface<Spi
         let rx_available_space = loop {
             let mut rx_fifo_status = [0];
             self.read_register(0x90, 8, &mut rx_fifo_status).await?;
-            let rx_fifo_status: RxFifoStatus = rx_fifo_status.into();
+            let rx_fifo_status: field_sets::RxFifoStatus = rx_fifo_status.into();
 
             if rx_fifo_status.n_elem_rxfifo() > 0 {
                 break rx_fifo_status.n_elem_rxfifo();
