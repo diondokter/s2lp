@@ -8,7 +8,7 @@ pub mod tx;
 
 pub struct Shutdown;
 pub struct Standby;
-pub struct Ready<PF> {
+pub struct Ready<PF: ?Sized> {
     _p: PhantomData<PF>,
 }
 
@@ -57,5 +57,5 @@ pub(crate) trait Addressable {}
 
 impl Addressable for Standby {}
 impl<PF> Addressable for Ready<PF> {}
-impl<'buffer, PF> Addressable for Tx<'buffer, PF> {}
-impl<'buffer, PF> Addressable for Rx<'buffer, PF> {}
+impl<PF> Addressable for Tx<'_, PF> {}
+impl<PF> Addressable for Rx<'_, PF> {}

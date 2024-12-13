@@ -2,9 +2,8 @@ use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
 
 use crate::{
-    ll::LenWid,
-    packet_format::{Basic, Uninitialized},
-    Error, ErrorOf, S2lp,
+    packet_format::{Basic, PacketFormat, Uninitialized},
+    ErrorOf, S2lp,
 };
 
 use super::{Ready, Rx, Tx};
@@ -17,44 +16,21 @@ where
     Delay: DelayNs,
 {
     #[allow(clippy::too_many_arguments)]
-    pub async fn set_basic_format(
+    pub async fn set_format<Format: PacketFormat>(
         mut self,
-        preamble_length: u16, // 0-2046
-        preamble_pattern: PreamblePattern,
-        sync_length: u8, // 0-32
-        sync_pattern: u32,
-        include_address: bool,
-        packet_length_encoding: LenWid,
-        postamble_length: u8, // In pairs of `01`'s
-        crc_mode: CrcMode,
-        packet_filter: PacketFilteringOptions,
-    ) -> Result<S2lp<Ready<Basic>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
+        format_config: &Format::Config,
+    ) -> Result<S2lp<Ready<Format>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
+        // Set up the format specific configs
+        Format::use_config(&mut self, format_config).await?;
+
         self.ll()
             .ant_select_conf()
             .modify_async(|reg| reg.set_cs_blanking(true))
             .await?;
 
         self.ll()
-            .pckt_ctrl_6()
-            .write_async(|reg| {
-                reg.set_preamble_len(preamble_length);
-                reg.set_sync_len(sync_length)
-            })
-            .await?;
-
-        self.ll()
-            .pckt_ctrl_4()
-            .write_async(|reg| {
-                reg.set_address_len(include_address);
-                reg.set_len_wid(packet_length_encoding);
-            })
-            .await?;
-
-        self.ll()
             .pckt_ctrl_3()
             .write_async(|reg| {
-                reg.set_pckt_frmt(crate::ll::PacketFormat::Basic);
-                reg.set_preamble_sel(preamble_pattern as u8);
                 reg.set_rx_mode(crate::ll::RxMode::Normal);
                 reg.set_byte_swap(false);
                 reg.set_fsk_4_sym_swap(false);
@@ -62,14 +38,8 @@ where
             .await?;
 
         self.ll()
-            .pckt_ctrl_2()
-            .write_async(|reg| reg.set_fix_var_len(crate::ll::FixVarLen::Variable))
-            .await?;
-
-        self.ll()
             .pckt_ctrl_1()
             .write_async(|reg| {
-                reg.set_crc_mode(crc_mode);
                 reg.set_fec_en(false);
                 reg.set_second_sync_sel(false);
                 reg.set_tx_source(crate::ll::TxSource::Normal);
@@ -77,63 +47,10 @@ where
             })
             .await?;
 
-        self.ll()
-            .sync()
-            .write_async(|reg| reg.set_value(sync_pattern.to_be()))
-            .await?;
-
-        self.ll()
-            .pckt_pstmbl()
-            .write_async(|reg| reg.set_value(postamble_length))
-            .await?;
-
         // Set the tx fifo almost empty to the default
         self.ll().fifo_config_0().write_async(|_| ()).await?;
         // Set the rx fifo almost full to the default
         self.ll().fifo_config_3().write_async(|_| ()).await?;
-
-        // Set the addresses
-        self.ll()
-            .pckt_flt_options()
-            .modify_async(|reg| {
-                reg.set_crc_flt(packet_filter.discard_bad_crc);
-                reg.set_dest_vs_broadcast_addr(packet_filter.broadcast_address.is_some());
-                reg.set_dest_vs_multicast_addr(packet_filter.multicast_address.is_some());
-                reg.set_dest_vs_source_addr(packet_filter.source_address.is_some());
-            })
-            .await?;
-
-        self.ll()
-            .pckt_flt_goals_2()
-            .write_async(|reg| {
-                reg.set_broadcast_addr_or_dual_sync_2(
-                    packet_filter.broadcast_address.unwrap_or_default(),
-                )
-            })
-            .await?;
-
-        self.ll()
-            .pckt_flt_goals_1()
-            .write_async(|reg| {
-                reg.set_multicast_addr_or_dual_sync_1(
-                    packet_filter.multicast_address.unwrap_or_default(),
-                )
-            })
-            .await?;
-
-        self.ll()
-            .pckt_flt_goals_0()
-            .write_async(|reg| {
-                reg.set_tx_source_addr_or_dual_sync_0(
-                    packet_filter.source_address.unwrap_or_default(),
-                )
-            })
-            .await?;
-
-        self.ll()
-            .protocol_1()
-            .modify_async(|reg| reg.set_auto_pckt_flt(true))
-            .await?;
 
         self.ll()
             .mod_2()
@@ -164,48 +81,20 @@ where
     }
 }
 
-impl<Spi, Sdn, Gpio, Delay> S2lp<Ready<Basic>, Spi, Sdn, Gpio, Delay>
+impl<Format, Spi, Sdn, Gpio, Delay> S2lp<Ready<Format>, Spi, Sdn, Gpio, Delay>
 where
+    Format: PacketFormat,
     Spi: SpiDevice,
     Sdn: OutputPin,
     Gpio: InputPin + Wait,
     Delay: DelayNs,
 {
-    pub async fn send_packet(
+    pub async fn send_packet<'b>(
         mut self,
-        destination_address: Option<u8>,
-        payload: &[u8],
-    ) -> Result<S2lp<Tx<Basic>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
-        let pckt_ctrl_4 = self.ll().pckt_ctrl_4().read_async().await?;
-        let address_included = pckt_ctrl_4.address_len();
-        let max_packet_len = match pckt_ctrl_4.len_wid() {
-            LenWid::Bytes1 => u8::MAX as u16,
-            LenWid::Bytes2 => u16::MAX,
-        };
-
-        if payload.len() > (max_packet_len - address_included as u16) as usize {
-            return Err(Error::BufferTooLarge);
-        }
-
-        if address_included != destination_address.is_some() {
-            return Err(Error::BadConfig {
-                reason: "Given address different from config",
-            });
-        }
-
-        // Set the packet lenght
-        self.ll()
-            .pckt_len()
-            .write_async(|reg| reg.set_value(payload.len() as u16 + address_included as u16))
-            .await?;
-
-        // Set the destination address
-        if let Some(destination_address) = destination_address {
-            self.ll()
-                .pckt_flt_goals_3()
-                .write_async(|reg| reg.set_rx_source_addr_or_dual_sync_3(destination_address))
-                .await?;
-        }
+        tx_meta_data: &Format::TxMetaData,
+        payload: &'b [u8],
+    ) -> Result<S2lp<Tx<'b, Format>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
+        Format::setup_packet_send(&mut self, tx_meta_data, payload.len()).await?;
 
         // Clear out anything that might still be in the tx fifo
         self.ll().flush_tx_fifo().dispatch_async().await?;
@@ -262,64 +151,11 @@ where
         self.ll().irq_status().read_async().await?;
 
         #[cfg(feature = "defmt-03")]
-        defmt::debug!("Receiving basic packet");
+        defmt::debug!("Receiving packet");
 
-        // Start the tx process
+        // Start the rx process
         self.ll().rx().dispatch_async().await?;
 
         Ok(self.cast_state(Rx::new(buffer)))
-    }
-}
-
-pub use crate::ll::CrcMode;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
-#[repr(u8)]
-pub enum PreamblePattern {
-    /// - `0101` for 2(G)FSK or OOK/ASK
-    /// - `0010` for 4(G)FSK
-    Pattern0,
-    /// - `1010` for 2(G)FSK or OOK/ASK
-    /// - `0111` for 4(G)FSK
-    Pattern1,
-    /// - `1100` for 2(G)FSK or OOK/ASK
-    /// - `1101` for 4(G)FSK
-    Pattern2,
-    /// - `0011` for 2(G)FSK or OOK/ASK
-    /// - `1000` for 4(G)FSK
-    Pattern3,
-}
-
-/// Setup the filters.
-///
-/// If none of the address filters are set, then no filtering will be done on the address and
-/// all packets will be received.
-pub struct PacketFilteringOptions {
-    /// If true, packets with a bad CRC will be filtered out.
-    /// Ignored if no CRC is enabled.
-    pub discard_bad_crc: bool,
-    /// The address of *this* device.
-    ///
-    /// If Some, the filtering will be turned on and packets with this destination address will not be discarded.
-    pub source_address: Option<u8>,
-    /// The address of the multicast group this device is part of.
-    ///
-    /// If Some, the filtering will be turned on and packets with this destination address will not be discarded.
-    pub multicast_address: Option<u8>,
-    /// The broadcast address.
-    ///
-    /// If Some, the filtering will be turned on and packets with this destination address will not be discarded.
-    pub broadcast_address: Option<u8>,
-}
-
-impl Default for PacketFilteringOptions {
-    fn default() -> Self {
-        Self {
-            discard_bad_crc: true,
-            source_address: None,
-            multicast_address: None,
-            broadcast_address: None,
-        }
     }
 }

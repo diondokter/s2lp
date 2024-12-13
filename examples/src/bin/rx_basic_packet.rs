@@ -5,11 +5,8 @@ use defmt::unwrap;
 use embassy_executor::Spawner;
 use s2lp::{
     ll::{CrcMode, LenWid},
-    states::{
-        ready::{PacketFilteringOptions, PreamblePattern},
-        rx::RxResult,
-        shutdown::Config,
-    },
+    packet_format::{Basic, BasicConfig, PacketFilteringOptions, PreamblePattern},
+    states::{rx::RxResult, shutdown::Config},
 };
 use stm32u0_examples::{init_board, Board};
 use {defmt_rtt as _, panic_probe as _};
@@ -21,20 +18,20 @@ async fn main(_spawner: Spawner) -> ! {
     let s2 = unwrap!(s2.init(Config::default()).await);
 
     let mut s2 = unwrap!(
-        s2.set_basic_format(
-            128,
-            PreamblePattern::Pattern0,
-            32,
-            0x12345678,
-            true,
-            LenWid::Bytes1,
-            0,
-            CrcMode::CrcPoly0X1021,
-            PacketFilteringOptions {
+        s2.set_format::<Basic>(&BasicConfig {
+            preamble_length: 128,
+            preamble_pattern: PreamblePattern::Pattern0,
+            sync_length: 32,
+            sync_pattern: 0x12345678,
+            include_address: true,
+            packet_length_encoding: LenWid::Bytes1,
+            postamble_length: 0,
+            crc_mode: CrcMode::CrcPoly0X1021,
+            packet_filter: PacketFilteringOptions {
                 source_address: Some(0xAA),
                 ..Default::default()
             },
-        )
+        })
         .await
     );
 
