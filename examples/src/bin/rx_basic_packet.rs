@@ -43,11 +43,21 @@ async fn main(_spawner: Spawner) -> ! {
         let rx_result = unwrap!(rx_s2.wait().await);
         s2 = unwrap!(rx_s2.finish().await.ok());
 
-        defmt::info!("Packet {} has been Received! ({:a})", index, rx_result);
+        defmt::info!("{}: Wait is done: ({})", index, rx_result);
         index += 1;
 
-        if let RxResult::Ok { packet_size, .. } = rx_result {
-            defmt::info!("Received: {:a}", &buf[..packet_size])
+        if let RxResult::Ok {
+            packet_size,
+            rssi_value,
+            meta_data,
+        } = rx_result
+        {
+            defmt::info!(
+                "Received from {} with rssi {}: {:a}",
+                meta_data.destination_address,
+                rssi_value,
+                &buf[..packet_size]
+            )
         }
     }
 }

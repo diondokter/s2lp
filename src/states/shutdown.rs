@@ -66,7 +66,7 @@ where
             return Err(Error::Init);
         }
 
-        let mut this = self.cast_state(Ready::new());
+        let mut this = self.cast_state(Ready::new(0));
 
         #[cfg(feature = "defmt-03")]
         defmt::trace!("Setting correct radio config");
@@ -106,6 +106,8 @@ where
 
             config.xtal_frequency / if pd_clkdiv { 1 } else { 2 }
         };
+
+        this.state.digital_frequency = digital_frequency;
 
         if !is_ch_bw(config.bandwidth, digital_frequency) {
             return Err(Error::BadConfig {

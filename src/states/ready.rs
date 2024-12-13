@@ -72,7 +72,8 @@ where
         #[cfg(feature = "defmt-03")]
         defmt::debug!("Chip configured for basic packets");
 
-        Ok(self.cast_state(Ready::new()))
+        let digital_frequency = self.state.digital_frequency;
+        Ok(self.cast_state(Ready::new(digital_frequency)))
     }
 }
 
@@ -117,13 +118,27 @@ where
         // Start the tx process
         self.ll().tx().dispatch_async().await?;
 
-        Ok(self.cast_state(Tx::new(&payload[initial_len..])))
+        let digital_frequency = self.state.digital_frequency;
+        Ok(self.cast_state(Tx::new(digital_frequency, &payload[initial_len..])))
     }
 
     pub async fn start_receive(
         mut self,
         buffer: &mut [u8],
+        rx_timeout_us: Option<u16>,
     ) -> Result<S2lp<Rx<Basic>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
+        if let Some(rx_timeout_us) = rx_timeout_us {
+            self.ll()
+                .pckt_flt_options()
+                .modify_async(|reg| reg.set_rx_timeout_and_or_sel(true))
+                .await?;
+        } else {
+            self.ll()
+                .pckt_flt_options()
+                .modify_async(|reg| reg.set_rx_timeout_and_or_sel(false))
+                .await?;
+        }
+
         // Clear out anything that might still be in the rx fifo
         self.ll().flush_rx_fifo().dispatch_async().await?;
 
@@ -151,6 +166,7 @@ where
         // Start the rx process
         self.ll().rx().dispatch_async().await?;
 
-        Ok(self.cast_state(Rx::new(buffer)))
+        let digital_frequency = self.state.digital_frequency;
+        Ok(self.cast_state(Rx::new(digital_frequency, buffer)))
     }
 }
