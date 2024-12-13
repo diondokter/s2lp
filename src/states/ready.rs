@@ -53,11 +53,6 @@ where
         self.ll().fifo_config_3().write_async(|_| ()).await?;
 
         self.ll()
-            .mod_2()
-            .modify_async(|reg| reg.set_modulation_type(crate::ll::ModulationType::Fsk2))
-            .await?;
-
-        self.ll()
             .pm_conf_1()
             .modify_async(|reg| reg.set_smps_lvl_mode(true))
             .await?;
