@@ -6,7 +6,7 @@ use crate::{
     ErrorOf, S2lp,
 };
 
-use super::{Ready, Rx, Tx};
+use super::{rx::RxMode, Ready, Rx, Tx};
 
 impl<Spi, Sdn, Gpio, Delay> S2lp<Ready<Uninitialized>, Spi, Sdn, Gpio, Delay>
 where
@@ -70,7 +70,7 @@ where
             .await?; // -85 dB
 
         #[cfg(feature = "defmt-03")]
-        defmt::debug!("Chip configured for basic packets");
+        defmt::debug!("Packet type has been configured");
 
         let digital_frequency = self.state.digital_frequency;
         Ok(self.cast_state(Ready::new(digital_frequency)))
@@ -125,19 +125,10 @@ where
     pub async fn start_receive(
         mut self,
         buffer: &mut [u8],
-        rx_timeout_us: Option<u16>,
+        mode: RxMode,
     ) -> Result<S2lp<Rx<Basic>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
-        if let Some(rx_timeout_us) = rx_timeout_us {
-            self.ll()
-                .pckt_flt_options()
-                .modify_async(|reg| reg.set_rx_timeout_and_or_sel(true))
-                .await?;
-        } else {
-            self.ll()
-                .pckt_flt_options()
-                .modify_async(|reg| reg.set_rx_timeout_and_or_sel(false))
-                .await?;
-        }
+        let digital_frequency = self.state.digital_frequency;
+        mode.write_to_device(self.ll(), digital_frequency).await?;
 
         // Clear out anything that might still be in the rx fifo
         self.ll().flush_rx_fifo().dispatch_async().await?;

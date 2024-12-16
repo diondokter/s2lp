@@ -15,7 +15,7 @@ where
 {
     /// Wait for the transmission to be done including waiting for CSMA/CA and retries.
     ///
-    /// After this is done, call [Self::stop] to get back the radio in the ready state.
+    /// After this is done, call [Self::abort] to get back the radio in the ready state.
     pub async fn wait(&mut self) -> Result<TxResult, ErrorOf<Self>> {
         if self.state.tx_done {
             return Ok(TxResult::TxAlreadyDone);
