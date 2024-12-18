@@ -113,7 +113,7 @@ where
         let initial_len = self.ll().fifo().write_async(payload).await?;
 
         #[cfg(feature = "defmt-03")]
-        defmt::debug!("Sending basic packet with len: {}", payload.len());
+        defmt::debug!("Sending packet with len: {}", payload.len());
 
         // Start the tx process
         self.ll().tx().dispatch_async().await?;
@@ -152,7 +152,7 @@ where
         self.ll().irq_status().read_async().await?;
 
         #[cfg(feature = "defmt-03")]
-        defmt::debug!("Receiving packet");
+        defmt::trace!("Starting receiver");
 
         // Start the rx process
         self.ll().rx().dispatch_async().await?;

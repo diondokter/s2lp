@@ -273,10 +273,12 @@ fn find_rx_timer_prescaler_and_counter(
     const MAX_COUNTER: u64 = 255;
 
     // Calculate the smallest prescaler
-    let mut prescaler = t_scaled.div_ceil(MAX_COUNTER * SCALE).saturating_sub(1);
+    let mut prescaler = t_scaled
+        .div_ceil(MAX_COUNTER * SCALE)
+        .saturating_sub(1)
+        .max(1);
 
     // Calculate the corresponding counter
-    // Add 2 because the hardware subtracts one and we always want a higher timeout than the user gives
     let mut counter = t_scaled.div_ceil((prescaler + 1) * SCALE) + 1;
 
     if counter > u8::MAX as _ {

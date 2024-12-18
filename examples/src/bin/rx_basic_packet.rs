@@ -49,7 +49,7 @@ async fn main(_spawner: Spawner) -> ! {
                 &mut buf,
                 s2lp::states::rx::RxMode::Normal {
                     timeout: Some(RxTimeout {
-                        timeout_us: 100000,
+                        timeout_us: 1_000_000,
                         mask: Default::default(),
                     })
                 }
