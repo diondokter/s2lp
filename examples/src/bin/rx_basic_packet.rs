@@ -6,10 +6,7 @@ use embassy_executor::Spawner;
 use s2lp::{
     ll::{CrcMode, LenWid},
     packet_format::{Basic, BasicConfig, PacketFilteringOptions, PreamblePattern},
-    states::{
-        rx::{RxResult, RxTimeout},
-        shutdown::Config,
-    },
+    states::{rx::RxResult, shutdown::Config},
 };
 use stm32u0_examples::{init_board, Board};
 use {defmt_rtt as _, panic_probe as _};
@@ -40,22 +37,9 @@ async fn main(_spawner: Spawner) -> ! {
 
     let mut index = 0;
 
-    embassy_time::Timer::after_millis(1000).await;
-
     loop {
         let mut buf = [0; 128];
-        let mut rx_s2 = unwrap!(
-            s2.start_receive(
-                &mut buf,
-                s2lp::states::rx::RxMode::Normal {
-                    timeout: Some(RxTimeout {
-                        timeout_us: 1_000_000,
-                        mask: Default::default(),
-                    })
-                }
-            )
-            .await
-        );
+        let mut rx_s2 = unwrap!(s2.start_receive(&mut buf, Default::default(),).await);
         let rx_result = unwrap!(rx_s2.wait().await);
         s2 = unwrap!(rx_s2.finish().await.ok());
 

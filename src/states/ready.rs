@@ -144,8 +144,6 @@ where
                 reg.set_rx_data_disc(true);
                 reg.set_crc_error(true);
                 reg.set_rx_sniff_timeout(true);
-                reg.set_valid_preamble(true);
-                reg.set_valid_sync(true);
             })
             .await?;
         // Read the irq status to clear it

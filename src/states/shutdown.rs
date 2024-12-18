@@ -154,7 +154,8 @@ where
 
             #[cfg(feature = "defmt-03")]
             defmt::trace!(
-                "Selected datarate: {}",
+                "Selected datarate. Target: {}, found: {}",
+                config.datarate,
                 compute_datarate(digital_frequency, used_mantissa, used_exponent)
             );
 
@@ -222,11 +223,19 @@ where
                         < config.frequency_deviation.abs_diff(prev_fdev)
                     {
                         #[cfg(feature = "defmt-03")]
-                        defmt::trace!("Selected frequency deviation: {}", fdev);
+                        defmt::trace!(
+                            "Selected frequency deviation. Target: {}, found: {}",
+                            config.frequency_deviation,
+                            fdev
+                        );
                         mantissa
                     } else {
                         #[cfg(feature = "defmt-03")]
-                        defmt::trace!("Selected frequency deviation: {}", prev_fdev);
+                        defmt::trace!(
+                            "Selected frequency deviation. Target: {}, found: {}",
+                            config.frequency_deviation,
+                            prev_fdev
+                        );
                         mantissa + 1
                     };
                     break;
@@ -497,8 +506,8 @@ fn search_channel_filter_bandwidth(target_bw: u32, dig_freq: u32) -> crate::ll::
         .unwrap();
 
     #[cfg(feature = "defmt-03")]
-    defmt::debug!(
-        "Searched channel bandwidth. Target: {}, found: {}",
+    defmt::trace!(
+        "Selected channel bandwidth. Target: {}, found: {}",
         target_bw,
         word_to_bandwidth(CHANNEL_FILTER_WORDS[best_index])
     );

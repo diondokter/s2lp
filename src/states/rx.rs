@@ -83,16 +83,6 @@ where
                     meta_data: PF::RxMetaData::read_from_device(&mut self.device).await?,
                 });
             }
-
-            if irq_status.valid_sync() {
-                #[cfg(feature = "defmt-03")]
-                defmt::trace!("Valid sync received");
-            }
-
-            if irq_status.valid_preamble() {
-                #[cfg(feature = "defmt-03")]
-                defmt::trace!("Valid preamble received");
-            }
         }
     }
 
@@ -140,10 +130,18 @@ pub enum RxResult<MetaData> {
     Timeout,
 }
 
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
 pub enum RxMode {
     Normal { timeout: Option<RxTimeout> },
     LowDutyCycle { timeout: RxTimeout },
     Sniff { timeout: RxTimeout },
+}
+
+impl Default for RxMode {
+    fn default() -> Self {
+        RxMode::Normal { timeout: None }
+    }
 }
 
 impl RxMode {
@@ -175,6 +173,7 @@ impl RxMode {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
 pub struct RxTimeout {
     /// The amount of time after which the RX timer timeout happens
     pub timeout_us: u32,
@@ -226,6 +225,7 @@ impl RxTimeout {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
 #[repr(u8)]
 pub enum RxTimeoutMask {
     /// INTERNAL API:
