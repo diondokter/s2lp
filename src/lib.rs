@@ -13,7 +13,8 @@ pub mod states;
 pub struct S2lp<State, Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait, Delay: DelayNs> {
     device: Device<DeviceInterface<Spi>>,
     shutdown_pin: Sdn,
-    gpio0: Gpio,
+    gpio_pin: Gpio,
+    gpio_number: GpioNumber,
     delay: Delay,
     state: State,
 }
@@ -28,7 +29,8 @@ impl<State, Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait, Delay: DelayN
         S2lp {
             device: self.device,
             shutdown_pin: self.shutdown_pin,
-            gpio0: self.gpio0,
+            gpio_pin: self.gpio_pin,
+            gpio_number: self.gpio_number,
             delay: self.delay,
             state: next_state,
         }
@@ -91,6 +93,7 @@ impl<SpiError, SdnError, GpioError, T> From<device_driver::ConversionError<T>>
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
+#[repr(u8)]
 pub enum GpioNumber {
     Gpio0,
     Gpio1,

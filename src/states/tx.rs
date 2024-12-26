@@ -23,7 +23,7 @@ where
 
         loop {
             // Wait for the interrupt
-            match select(self.gpio0.wait_for_low(), self.delay.delay_ms(1000)).await {
+            match select(self.gpio_pin.wait_for_low(), self.delay.delay_ms(1000)).await {
                 Either::First(res) => res.map_err(Error::Gpio)?,
                 Either::Second(()) => {
                     // Timeout. Check for bad state

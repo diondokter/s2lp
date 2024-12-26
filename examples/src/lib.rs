@@ -43,7 +43,7 @@ pub async fn init_board() -> Board {
     let shutdown = Output::new(p.PA8, Level::Low, Speed::VeryHigh);
     #[cfg(feature = "dk")]
     let shutdown = Output::new(p.PD2, Level::Low, Speed::VeryHigh);
-    let gpio0 = ExtiInput::new(p.PA0, p.EXTI0, embassy_stm32::gpio::Pull::None);
+    let s2_gpio0 = ExtiInput::new(p.PA0, p.EXTI0, embassy_stm32::gpio::Pull::None);
     let s2_gpio1 = Input::new(p.PA2, embassy_stm32::gpio::Pull::None);
     let s2_gpio2 = Input::new(p.PA3, embassy_stm32::gpio::Pull::None);
     let s2_gpio3 = Input::new(p.PA5, embassy_stm32::gpio::Pull::None);
@@ -55,7 +55,13 @@ pub async fn init_board() -> Board {
     ));
 
     // Init the radio
-    let s2 = s2lp::S2lp::new(spi_device, shutdown, gpio0, embassy_time::Delay);
+    let s2 = s2lp::S2lp::new(
+        spi_device,
+        shutdown,
+        s2_gpio0,
+        s2lp::GpioNumber::Gpio0,
+        embassy_time::Delay,
+    );
 
     defmt::info!("Initializing done");
 

@@ -27,7 +27,7 @@ where
 
         loop {
             // Wait for the interrupt
-            self.gpio0.wait_for_low().await.map_err(Error::Gpio)?;
+            self.gpio_pin.wait_for_low().await.map_err(Error::Gpio)?;
 
             // Figure out what's up
             let irq_status = self.ll().irq_status().read_async().await?;

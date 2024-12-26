@@ -2,9 +2,10 @@ use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
 
 use crate::{
-    ll::{Device, DeviceInterface, GpioMode, GpioSelectOutput, State},
+    ll::{Device, DeviceInterface, GpioSelectOutput, State},
     packet_format::Uninitialized,
-    Error, ErrorOf, S2lp,
+    states::addressable::GpioFunction,
+    Error, ErrorOf, GpioNumber, S2lp,
 };
 
 use super::{Ready, Shutdown};
@@ -16,11 +17,26 @@ where
     Gpio: InputPin + Wait,
     Delay: DelayNs,
 {
-    pub const fn new(spi: Spi, shutdown_pin: Sdn, gpio0: Gpio, delay: Delay) -> Self {
+    /// Create a new instance of the driver.
+    ///
+    /// The driver requires one of the gpio pins for interrupt management.
+    /// The pin and its number are given as arguments.
+    ///
+    /// If gpio pin 0 is used, the init procedure will be faster since it gives
+    /// a power-on-reset signal by default. If another pin is given, the worst case
+    /// startup delay is used to allow the radio to boot.
+    pub const fn new(
+        spi: Spi,
+        shutdown_pin: Sdn,
+        gpio_pin: Gpio,
+        gpio_number: GpioNumber,
+        delay: Delay,
+    ) -> Self {
         Self {
             device: Device::new(DeviceInterface::new(spi)),
             shutdown_pin,
-            gpio0,
+            gpio_pin,
+            gpio_number,
             delay,
             state: Shutdown,
         }
@@ -54,10 +70,15 @@ where
         self.delay.delay_us(1).await;
         self.shutdown_pin.set_low().map_err(Error::Sdn)?;
 
-        #[cfg(feature = "defmt-03")]
-        defmt::trace!("Waiting for POR");
-
-        self.gpio0.wait_for_high().await.map_err(Error::Gpio)?;
+        if self.gpio_number == GpioNumber::Gpio0 {
+            #[cfg(feature = "defmt-03")]
+            defmt::trace!("Waiting for POR");
+            self.gpio_pin.wait_for_high().await.map_err(Error::Gpio)?;
+        } else {
+            #[cfg(feature = "defmt-03")]
+            defmt::trace!("Waiting for reset delay");
+            self.delay.delay_ms(2).await;
+        }
 
         #[cfg(feature = "defmt-03")]
         defmt::trace!("Checking interface works");
@@ -71,13 +92,14 @@ where
         #[cfg(feature = "defmt-03")]
         defmt::trace!("Setting correct radio config");
         // Set the gpio pin to irq mode since we use IRQs in the driver
-        this.ll()
-            .gpio_conf(0)
-            .write_async(|reg| {
-                reg.set_gpio_mode(GpioMode::OutputLowPower);
-                reg.set_gpio_select_output(GpioSelectOutput::Irq);
-            })
-            .await?;
+        this.set_gpio_function(
+            this.gpio_number,
+            GpioFunction::Output {
+                high_power: false,
+                select: GpioSelectOutput::Irq,
+            },
+        )
+        .await?;
 
         // Datasheet 4.7 - Setting up the crystal oscillator
         // If the xtal_frequency is slow, then we can drive the chip from it directly.
