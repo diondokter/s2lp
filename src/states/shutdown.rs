@@ -360,6 +360,7 @@ where
 
 pub use crate::ll::ModulationType;
 
+/// The radio configuration
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Config {
     /// The frequency of the crystal oscillator

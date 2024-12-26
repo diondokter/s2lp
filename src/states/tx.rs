@@ -94,6 +94,7 @@ where
     }
 }
 
+/// The result of the TX operation
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
 pub enum TxResult {

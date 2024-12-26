@@ -1,3 +1,5 @@
+//! Module containing all packet format handling and setup
+
 use core::fmt::Debug;
 
 use device_driver::AsyncRegisterInterface;
@@ -10,15 +12,21 @@ use crate::{
     Error, ErrorOf, S2lp,
 };
 
+/// No packet format has been configured yet
 pub struct Uninitialized;
 
-#[allow(async_fn_in_trait)]
-pub trait PacketFormat {
+trait SealedPacketFormat {}
+#[allow(async_fn_in_trait, private_bounds)]
+pub trait PacketFormat: SealedPacketFormat {
+    /// All the configuration paramters for the format
     type Config;
 
+    /// All reception metadata specific for the format
     type RxMetaData: RxMetaData;
+    /// All transmission metada specific for the format
     type TxMetaData;
 
+    /// Configure the device to be in the correct packet format with the given config
     async fn use_config<Spi, Sdn, Gpio, Delay>(
         device: &mut S2lp<Ready<Uninitialized>, Spi, Sdn, Gpio, Delay>,
         config: &Self::Config,
@@ -29,6 +37,7 @@ pub trait PacketFormat {
         Gpio: InputPin + Wait,
         Delay: DelayNs;
 
+    /// Write the transmission metadata to the chip together with the packet len
     async fn setup_packet_send<Spi, Sdn, Gpio, Delay>(
         device: &mut S2lp<Ready<Self>, Spi, Sdn, Gpio, Delay>,
         tx_meta_data: &Self::TxMetaData,
@@ -42,7 +51,8 @@ pub trait PacketFormat {
 }
 
 #[allow(async_fn_in_trait)]
-pub trait RxMetaData: Debug + Clone {
+pub(crate) trait RxMetaData: Debug + Clone {
+    /// Read the metadata from the device
     async fn read_from_device<I: AsyncRegisterInterface<AddressType = u8>>(
         device: &mut Device<I>,
     ) -> Result<Self, I::Error>
@@ -50,10 +60,10 @@ pub trait RxMetaData: Debug + Clone {
         Self: Sized;
 }
 
-// Basic impl
-
+/// The basic packet format
 pub struct Basic;
 
+impl SealedPacketFormat for Basic {}
 impl PacketFormat for Basic {
     type Config = BasicConfig;
     type RxMetaData = BasicRxMetaData;
@@ -175,6 +185,7 @@ impl PacketFormat for Basic {
     }
 }
 
+/// Configuration for the Basic packet format
 pub struct BasicConfig {
     pub preamble_length: u16, // 0-2046
     pub preamble_pattern: PreamblePattern,
@@ -187,6 +198,7 @@ pub struct BasicConfig {
     pub packet_filter: PacketFilteringOptions,
 }
 
+/// Receiver metadata for the Basic packet format
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
 pub struct BasicRxMetaData {
@@ -213,6 +225,7 @@ impl RxMetaData for BasicRxMetaData {
     }
 }
 
+/// Transmission metadata for the Basic packet format
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
 pub struct BasicTxMetaData {

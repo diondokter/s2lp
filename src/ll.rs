@@ -1,16 +1,19 @@
+//! Low level register and interface definitions
+
 use device_driver::AsyncRegisterInterface;
 use embedded_hal::spi::Operation;
 use embedded_hal_async::spi::SpiDevice;
-
-#[derive(Debug)]
-pub struct DeviceInterface<Spi: SpiDevice> {
-    spi: Spi,
-}
 
 device_driver::create_device!(
     device_name: Device,
     manifest: "device.yaml"
 );
+
+/// The SPI wrapper interface to the driver
+#[derive(Debug)]
+pub struct DeviceInterface<Spi: SpiDevice> {
+    spi: Spi,
+}
 
 impl<Spi: SpiDevice> DeviceInterface<Spi> {
     /// Construct a new instance of the device.
@@ -145,6 +148,7 @@ impl<Spi: SpiDevice> device_driver::AsyncBufferInterface for DeviceInterface<Spi
     }
 }
 
+/// Low level interface error that wraps the SPI error
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
 pub struct DeviceError<Spi>(pub Spi);

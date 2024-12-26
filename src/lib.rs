@@ -9,6 +9,7 @@ pub mod ll;
 pub mod packet_format;
 pub mod states;
 
+/// The main driver struct of the crate representing the S2-LP radio
 #[derive(Debug)]
 pub struct S2lp<State, Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait, Delay: DelayNs> {
     device: Device<DeviceInterface<Spi>>,
@@ -49,6 +50,7 @@ impl<State, Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait, Delay: DelayN
     type ErrorType = Error<Spi::Error, Sdn::Error, Gpio::Error>;
 }
 
+/// The main error type of the crate
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
 pub enum Error<SpiError, SdnError, GpioError> {

@@ -15,7 +15,11 @@ where
     Gpio: InputPin + Wait,
     Delay: DelayNs,
 {
-    #[allow(clippy::too_many_arguments)]
+    /// Configure the packet format the radio is going to use.
+    ///
+    /// The format itself is given as a generic type.
+    /// The config parameters are given through a struct as a parameter of the function.
+    /// The type of the config struct depends on the used packet format.
     pub async fn set_format<Format: PacketFormat>(
         mut self,
         format_config: &Format::Config,
@@ -85,6 +89,7 @@ where
     Gpio: InputPin + Wait,
     Delay: DelayNs,
 {
+    /// Start a transmission and send a packet
     pub async fn send_packet<'b>(
         mut self,
         tx_meta_data: &Format::TxMetaData,
@@ -122,6 +127,7 @@ where
         Ok(self.cast_state(Tx::new(digital_frequency, &payload[initial_len..])))
     }
 
+    /// Start the reception to try and receive a packet
     pub async fn start_receive(
         mut self,
         buffer: &mut [u8],
