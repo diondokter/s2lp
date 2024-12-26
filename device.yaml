@@ -1904,7 +1904,7 @@ RCO_CALIBR_OUT3:
   fields:
     RFB_OUT:
       base: uint
-      start: 4
+      start: 7
       end: 8
       description: RFB word (LSB [0]) from internal RCO calibrator.
 VCO_CALIBR_OUT1:
