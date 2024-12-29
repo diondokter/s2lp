@@ -8,6 +8,7 @@ Operations:
 - [x] Receive
 - [ ] Tx power config
 - [x] Gpio config
+- [ ] Sleep
 
 Packet formats:
 - [x] Basic packet format
