@@ -1,6 +1,9 @@
 use embassy_futures::select::{select, Either};
-use embedded_hal::digital::{InputPin, OutputPin};
-use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
+use embedded_hal::{
+    digital::{InputPin, OutputPin},
+    spi::SpiDevice,
+};
+use embedded_hal_async::{delay::DelayNs, digital::Wait};
 
 use crate::{ll::State, Error, ErrorOf, S2lp};
 
@@ -27,7 +30,7 @@ where
                 Either::First(res) => res.map_err(Error::Gpio)?,
                 Either::Second(()) => {
                     // Timeout. Check for bad state
-                    let state = self.ll().mc_state_0().read_async().await?.state();
+                    let state = self.ll().mc_state_0().read()?.state();
                     #[cfg(feature = "defmt-03")]
                     defmt::error!("TX wait timeout out in state: {}", state);
                     match state {
@@ -38,21 +41,21 @@ where
             }
 
             // Figure out what's up
-            let irq_status = self.ll().irq_status().read_async().await?;
+            let irq_status = self.ll().irq_status().read()?;
 
             #[cfg(feature = "defmt-03")]
             defmt::trace!("TX wait interrupt: {}", irq_status);
 
             if irq_status.tx_fifo_error() {
-                self.ll().abort().dispatch_async().await?;
-                self.ll().flush_tx_fifo().dispatch_async().await?;
+                self.ll().abort().dispatch()?;
+                self.ll().flush_tx_fifo().dispatch()?;
 
                 break Ok(TxResult::FifoError);
             }
 
             if irq_status.tx_fifo_almost_empty() {
                 // Refill the fifo
-                let written = self.device.fifo().write_async(self.state.tx_buffer).await?;
+                let written = self.device.fifo().write(self.state.tx_buffer)?;
                 self.state.tx_buffer = &self.state.tx_buffer[written..];
 
                 continue;
@@ -74,9 +77,9 @@ where
     }
 
     /// Aborts the transmission immediately
-    pub async fn abort(mut self) -> Result<S2lp<Ready<PF>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
-        self.ll().abort().dispatch_async().await?;
-        self.ll().flush_tx_fifo().dispatch_async().await?;
+    pub fn abort(mut self) -> Result<S2lp<Ready<PF>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
+        self.ll().abort().dispatch()?;
+        self.ll().flush_tx_fifo().dispatch()?;
 
         let digital_frequency = self.state.digital_frequency;
         Ok(self.cast_state(Ready::new(digital_frequency)))
@@ -84,7 +87,7 @@ where
 
     /// Finish the transmission. This only returns ok when the [Self::wait] function has returned.
     /// If you need to stop the transmission before it's done, call [Self::abort].
-    pub async fn finish(self) -> Result<S2lp<Ready<PF>, Spi, Sdn, Gpio, Delay>, Self> {
+    pub fn finish(self) -> Result<S2lp<Ready<PF>, Spi, Sdn, Gpio, Delay>, Self> {
         if self.state.tx_done {
             let digital_frequency = self.state.digital_frequency;
             Ok(self.cast_state(Ready::new(digital_frequency)))

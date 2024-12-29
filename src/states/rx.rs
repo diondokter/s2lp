@@ -1,6 +1,9 @@
-use device_driver::AsyncRegisterInterface;
-use embedded_hal::digital::{InputPin, OutputPin};
-use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
+use device_driver::RegisterInterface;
+use embedded_hal::{
+    digital::{InputPin, OutputPin},
+    spi::SpiDevice,
+};
+use embedded_hal_async::{delay::DelayNs, digital::Wait};
 
 use crate::{
     ll::Device,
@@ -30,7 +33,7 @@ where
             self.gpio_pin.wait_for_low().await.map_err(Error::Gpio)?;
 
             // Figure out what's up
-            let irq_status = self.ll().irq_status().read_async().await?;
+            let irq_status = self.ll().irq_status().read()?;
 
             #[cfg(feature = "defmt-03")]
             defmt::trace!("RX wait interrupt: {}", irq_status);
@@ -39,8 +42,8 @@ where
                 || irq_status.rx_fifo_error()
                 || self.state.written == self.state.rx_buffer.len()
             {
-                self.device.abort().dispatch_async().await?;
-                self.device.flush_rx_fifo().dispatch_async().await?;
+                self.device.abort().dispatch()?;
+                self.device.flush_rx_fifo().dispatch()?;
                 self.state.rx_done = true;
 
                 if self.state.written == self.state.rx_buffer.len() {
@@ -62,8 +65,7 @@ where
                 let received = self
                     .device
                     .fifo()
-                    .read_async(&mut self.state.rx_buffer[self.state.written..])
-                    .await?;
+                    .read(&mut self.state.rx_buffer[self.state.written..])?;
                 self.state.written += received;
 
                 #[cfg(feature = "defmt-03")]
@@ -79,17 +81,17 @@ where
                 self.state.rx_done = true;
                 return Ok(RxResult::Ok {
                     packet_size: self.state.written,
-                    rssi_value: self.device.rssi_level().read_async().await?.value() as i16 - 146,
-                    meta_data: PF::RxMetaData::read_from_device(&mut self.device).await?,
+                    rssi_value: self.device.rssi_level().read()?.value() as i16 - 146,
+                    meta_data: PF::RxMetaData::read_from_device(&mut self.device)?,
                 });
             }
         }
     }
 
     /// Aborts the transmission immediately
-    pub async fn abort(mut self) -> Result<S2lp<Ready<PF>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
-        self.ll().abort().dispatch_async().await?;
-        self.ll().flush_rx_fifo().dispatch_async().await?;
+    pub fn abort(mut self) -> Result<S2lp<Ready<PF>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
+        self.ll().abort().dispatch()?;
+        self.ll().flush_rx_fifo().dispatch()?;
 
         let digital_frequency = self.state.digital_frequency;
         Ok(self.cast_state(Ready::new(digital_frequency)))
@@ -97,7 +99,7 @@ where
 
     /// Finish the transmission. This only returns ok when the [Self::wait] function has returned.
     /// If you need to stop the transmission before it's done, call [Self::abort].
-    pub async fn finish(self) -> Result<S2lp<Ready<PF>, Spi, Sdn, Gpio, Delay>, Self> {
+    pub fn finish(self) -> Result<S2lp<Ready<PF>, Spi, Sdn, Gpio, Delay>, Self> {
         if self.state.rx_done {
             let digital_frequency = self.state.digital_frequency;
             Ok(self.cast_state(Ready::new(digital_frequency)))
@@ -145,7 +147,7 @@ impl Default for RxMode {
 }
 
 impl RxMode {
-    pub(crate) async fn write_to_device<I: AsyncRegisterInterface<AddressType = u8>>(
+    pub(crate) fn write_to_device<I: RegisterInterface<AddressType = u8>>(
         &self,
         device: &mut Device<I>,
         digital_frequency: u32,
@@ -154,15 +156,14 @@ impl RxMode {
             RxMode::Normal {
                 timeout: Some(timeout),
             } => {
-                timeout.write_to_device(device, digital_frequency).await?;
+                timeout.write_to_device(device, digital_frequency)?;
             }
             RxMode::Normal { timeout: None } => {
                 RxTimeout {
                     timeout_us: 0,
                     mask: RxTimeoutMask::_NoTimeout,
                 }
-                .write_to_device(device, digital_frequency)
-                .await?;
+                .write_to_device(device, digital_frequency)?;
             }
             RxMode::LowDutyCycle { timeout: _ } => todo!(),
             RxMode::Sniff { timeout: _ } => todo!(),
@@ -181,24 +182,20 @@ pub struct RxTimeout {
 }
 
 impl RxTimeout {
-    async fn write_to_device<I: AsyncRegisterInterface<AddressType = u8>>(
+    fn write_to_device<I: RegisterInterface<AddressType = u8>>(
         &self,
         device: &mut Device<I>,
         digital_frequency: u32,
     ) -> Result<(), I::Error> {
         device
             .pckt_flt_options()
-            .modify_async(|reg| reg.set_rx_timeout_and_or_sel((self.mask as u8 & 0b1000) > 0))
-            .await?;
+            .modify(|reg| reg.set_rx_timeout_and_or_sel((self.mask as u8 & 0b1000) > 0))?;
 
-        device
-            .protocol_2()
-            .modify_async(|reg| {
-                reg.set_cs_timeout_mask((self.mask as u8 & 0b0100) > 0);
-                reg.set_sqi_timeout_mask((self.mask as u8 & 0b0010) > 0);
-                reg.set_pqi_timeout_mask((self.mask as u8 & 0b0001) > 0);
-            })
-            .await?;
+        device.protocol_2().modify(|reg| {
+            reg.set_cs_timeout_mask((self.mask as u8 & 0b0100) > 0);
+            reg.set_sqi_timeout_mask((self.mask as u8 & 0b0010) > 0);
+            reg.set_pqi_timeout_mask((self.mask as u8 & 0b0001) > 0);
+        })?;
 
         let (prescaler, counter, overflow) =
             find_rx_timer_prescaler_and_counter(self.timeout_us, digital_frequency);
@@ -213,12 +210,10 @@ impl RxTimeout {
 
         device
             .timers_5()
-            .write_async(|reg| reg.set_rx_timer_cntr(counter))
-            .await?;
+            .write(|reg| reg.set_rx_timer_cntr(counter))?;
         device
             .timers_4()
-            .write_async(|reg| reg.set_rx_timer_presc(prescaler))
-            .await?;
+            .write(|reg| reg.set_rx_timer_presc(prescaler))?;
 
         Ok(())
     }

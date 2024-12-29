@@ -1,5 +1,8 @@
-use embedded_hal::digital::{InputPin, OutputPin};
-use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
+use embedded_hal::{
+    digital::{InputPin, OutputPin},
+    spi::SpiDevice,
+};
+use embedded_hal_async::{delay::DelayNs, digital::Wait};
 
 use crate::{
     ll::{Device, DeviceInterface, GpioSelectOutput, State},
@@ -82,7 +85,7 @@ where
 
         #[cfg(feature = "defmt-03")]
         defmt::trace!("Checking interface works");
-        let version = self.device.device_info_0().read_async().await?.version();
+        let version = self.device.device_info_0().read()?.version();
         if version != 0xC1 {
             return Err(Error::Init);
         }
@@ -98,32 +101,30 @@ where
                 high_power: false,
                 select: GpioSelectOutput::Irq,
             },
-        )
-        .await?;
+        )?;
 
         // Datasheet 4.7 - Setting up the crystal oscillator
         // If the xtal_frequency is slow, then we can drive the chip from it directly.
         // If it is fast, we need to enable the clock divider.
         let digital_frequency = {
-            let mut pd_clkdiv = this.ll().xo_rco_conf_1().read_async().await?.pd_clkdiv();
+            let mut pd_clkdiv = this.ll().xo_rco_conf_1().read()?.pd_clkdiv();
 
             if (config.xtal_frequency < DIG_DOMAIN_XTAL_THRESH && !pd_clkdiv)
                 || (config.xtal_frequency > DIG_DOMAIN_XTAL_THRESH && pd_clkdiv)
             {
                 // Go to standby
-                this.ll().standby().dispatch_async().await?;
-                while this.ll().mc_state_0().read_async().await?.state()? != State::Standby {}
+                this.ll().standby().dispatch()?;
+                while this.ll().mc_state_0().read()?.state()? != State::Standby {}
 
                 // Invert the pd_clkdiv
                 pd_clkdiv = !pd_clkdiv;
                 this.ll()
                     .xo_rco_conf_1()
-                    .modify_async(|reg| reg.set_pd_clkdiv(pd_clkdiv))
-                    .await?;
+                    .modify(|reg| reg.set_pd_clkdiv(pd_clkdiv))?;
 
                 // Go to ready
-                this.ll().ready().dispatch_async().await?;
-                while this.ll().mc_state_0().read_async().await?.state()? != State::Ready {}
+                this.ll().ready().dispatch()?;
+                while this.ll().mc_state_0().read()?.state()? != State::Ready {}
             }
 
             config.xtal_frequency / if pd_clkdiv { 1 } else { 2 }
@@ -140,18 +141,12 @@ where
         // Datasheet 5.5.5 - Set the Intermediate Frequency (IF) to the recommended value
         {
             const IF: u64 = 300_000;
-            this.ll()
-                .if_offset_ana()
-                .write_async(|reg| {
-                    reg.set_value(((IF << 13) * 3 / config.xtal_frequency as u64 - 100) as u8)
-                })
-                .await?;
-            this.ll()
-                .if_offset_dig()
-                .write_async(|reg| {
-                    reg.set_value(((IF << 13) * 3 / digital_frequency as u64 - 100) as u8)
-                })
-                .await?;
+            this.ll().if_offset_ana().write(|reg| {
+                reg.set_value(((IF << 13) * 3 / config.xtal_frequency as u64 - 100) as u8)
+            })?;
+            this.ll().if_offset_dig().write(|reg| {
+                reg.set_value(((IF << 13) * 3 / digital_frequency as u64 - 100) as u8)
+            })?;
         }
 
         // Datasheet 5.4.5 - Configure the datarate
@@ -183,30 +178,25 @@ where
 
             this.ll()
                 .mod_4()
-                .write_async(|reg| reg.set_value(used_mantissa))
-                .await?;
-            this.ll()
-                .mod_2()
-                .write_async(|reg| {
-                    reg.set_datarate_e(used_exponent);
-                    reg.set_modulation_type(config.modulation);
-                })
-                .await?;
+                .write(|reg| reg.set_value(used_mantissa))?;
+            this.ll().mod_2().write(|reg| {
+                reg.set_datarate_e(used_exponent);
+                reg.set_modulation_type(config.modulation);
+            })?;
         }
 
         // Datasheet 5.3.1
         {
             this.ll()
                 .synt()
-                .modify_async(|reg| reg.set_bs(is_frequency_band_middle(config.base_frequency)))
-                .await?;
+                .modify(|reg| reg.set_bs(is_frequency_band_middle(config.base_frequency)))?;
         }
 
         // Datasheet 5.4.1 - Configure the frequency modulation
         {
             let band_factor = get_band_factor(config.base_frequency);
 
-            let refdiv = if this.ll().xo_rco_conf_0().read_async().await?.refdiv() {
+            let refdiv = if this.ll().xo_rco_conf_0().read()?.refdiv() {
                 2
             } else {
                 1
@@ -268,56 +258,45 @@ where
 
             this.ll()
                 .mod_1()
-                .modify_async(|reg| reg.set_fdev_e(used_exponent))
-                .await?;
+                .modify(|reg| reg.set_fdev_e(used_exponent))?;
             this.ll()
                 .mod_0()
-                .write_async(|reg| reg.set_fdev_m(used_mantissa))
-                .await?;
+                .write(|reg| reg.set_fdev_m(used_mantissa))?;
         }
 
         // Set the bandwidth
-        this.ll()
-            .ch_flt()
-            .write_async(|reg| {
-                *reg = search_channel_filter_bandwidth(config.bandwidth, digital_frequency);
-            })
-            .await?;
+        this.ll().ch_flt().write(|reg| {
+            *reg = search_channel_filter_bandwidth(config.bandwidth, digital_frequency);
+        })?;
 
         // Set the OOK smoothing
         let is_ook = matches!(config.modulation, ModulationType::AskOok);
         this.ll()
             .pa_power_0()
-            .modify_async(|reg| reg.set_dig_smooth_en(is_ook))
-            .await?;
+            .modify(|reg| reg.set_dig_smooth_en(is_ook))?;
         this.ll()
             .pa_config_1()
-            .modify_async(|reg| reg.set_fir_en(is_ook))
-            .await?;
+            .modify(|reg| reg.set_fir_en(is_ook))?;
 
-        this.ll()
-            .pa_config_0()
-            .modify_async(|reg| {
-                reg.set_pa_fc(match config.datarate {
-                    ..16000 => crate::ll::PaFc::Khz12P5,
-                    16000..32000 => crate::ll::PaFc::Khz25,
-                    32000..62500 => crate::ll::PaFc::Khz50,
-                    62500.. => crate::ll::PaFc::Khz100,
-                })
+        this.ll().pa_config_0().modify(|reg| {
+            reg.set_pa_fc(match config.datarate {
+                ..16000 => crate::ll::PaFc::Khz12P5,
+                16000..32000 => crate::ll::PaFc::Khz25,
+                32000..62500 => crate::ll::PaFc::Khz50,
+                62500.. => crate::ll::PaFc::Khz100,
             })
-            .await?;
+        })?;
 
         // Enable AFC freeze on SYNC
         this.ll()
             .afc_2()
-            .modify_async(|reg| reg.set_afc_freeze_on_sync(true))
-            .await?;
+            .modify(|reg| reg.set_afc_freeze_on_sync(true))?;
 
         // Set the synt word (base frequency) and charge pump
         {
             let band_factor = get_band_factor(config.base_frequency);
 
-            let refdiv = if this.ll().xo_rco_conf_0().read_async().await?.refdiv() {
+            let refdiv = if this.ll().xo_rco_conf_0().read()?.refdiv() {
                 2
             } else {
                 1
@@ -340,15 +319,11 @@ where
 
             this.ll()
                 .synth_config_2()
-                .modify_async(|reg| reg.set_pll_pfd_split_en(pfd_split))
-                .await?;
-            this.ll()
-                .synt()
-                .modify_async(|reg| {
-                    reg.set_synt(synt);
-                    reg.set_pll_cp_isel(cp_isel);
-                })
-                .await?;
+                .modify(|reg| reg.set_pll_pfd_split_en(pfd_split))?;
+            this.ll().synt().modify(|reg| {
+                reg.set_synt(synt);
+                reg.set_pll_cp_isel(cp_isel);
+            })?;
         }
 
         #[cfg(feature = "defmt-03")]
@@ -489,13 +464,13 @@ fn compute_fdev(
         0 => {
             let nom = xtal_freq as u64 * refdiv as u64 * mantissa as u64;
             let denom = (1 << 19) * refdiv as u64 * band_factor as u64 * band_factor_div;
-            (nom / denom).try_into().unwrap()
+            (nom / denom) as _
         }
         e @ 1..16 => {
             let nom =
                 xtal_freq as u64 * refdiv as u64 * (256 + mantissa as u64) * (1 << (e as u64 - 1));
             let denom = (1 << 19) * refdiv as u64 * band_factor as u64 * band_factor_div;
-            (nom / denom).try_into().unwrap()
+            (nom / denom) as _
         }
         #[cfg(feature = "defmt-03")]
         _ => defmt::panic!("Illegal exponent value"),
@@ -526,7 +501,7 @@ fn search_channel_filter_bandwidth(target_bw: u32, dig_freq: u32) -> crate::ll::
         // Run over it with the index
         .enumerate()
         .min_by_key(|(_, diff)| *diff)
-        .unwrap();
+        .unwrap_or_default();
 
     #[cfg(feature = "defmt-03")]
     defmt::trace!(

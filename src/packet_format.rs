@@ -2,9 +2,12 @@
 
 use core::fmt::Debug;
 
-use device_driver::AsyncRegisterInterface;
-use embedded_hal::digital::{InputPin, OutputPin};
-use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
+use device_driver::RegisterInterface;
+use embedded_hal::{
+    digital::{InputPin, OutputPin},
+    spi::SpiDevice,
+};
+use embedded_hal_async::{delay::DelayNs, digital::Wait};
 
 use crate::{
     ll::{Device, LenWid},
@@ -27,7 +30,7 @@ pub trait PacketFormat: SealedPacketFormat {
     type TxMetaData;
 
     /// Configure the device to be in the correct packet format with the given config
-    async fn use_config<Spi, Sdn, Gpio, Delay>(
+    fn use_config<Spi, Sdn, Gpio, Delay>(
         device: &mut S2lp<Ready<Uninitialized>, Spi, Sdn, Gpio, Delay>,
         config: &Self::Config,
     ) -> Result<(), ErrorOf<S2lp<Ready<Uninitialized>, Spi, Sdn, Gpio, Delay>>>
@@ -38,7 +41,7 @@ pub trait PacketFormat: SealedPacketFormat {
         Delay: DelayNs;
 
     /// Write the transmission metadata to the chip together with the packet len
-    async fn setup_packet_send<Spi, Sdn, Gpio, Delay>(
+    fn setup_packet_send<Spi, Sdn, Gpio, Delay>(
         device: &mut S2lp<Ready<Self>, Spi, Sdn, Gpio, Delay>,
         tx_meta_data: &Self::TxMetaData,
         payload_len: usize,
@@ -53,7 +56,7 @@ pub trait PacketFormat: SealedPacketFormat {
 #[allow(async_fn_in_trait)]
 pub(crate) trait RxMetaData: Debug + Clone {
     /// Read the metadata from the device
-    async fn read_from_device<I: AsyncRegisterInterface<AddressType = u8>>(
+    fn read_from_device<I: RegisterInterface<AddressType = u8>>(
         device: &mut Device<I>,
     ) -> Result<Self, I::Error>
     where
@@ -69,7 +72,7 @@ impl PacketFormat for Basic {
     type RxMetaData = BasicRxMetaData;
     type TxMetaData = BasicTxMetaData;
 
-    async fn use_config<Spi, Sdn, Gpio, Delay>(
+    fn use_config<Spi, Sdn, Gpio, Delay>(
         device: &mut S2lp<Ready<Uninitialized>, Spi, Sdn, Gpio, Delay>,
         config: &Self::Config,
     ) -> Result<(), ErrorOf<S2lp<Ready<Uninitialized>, Spi, Sdn, Gpio, Delay>>>
@@ -79,65 +82,46 @@ impl PacketFormat for Basic {
         Gpio: InputPin + Wait,
         Delay: DelayNs,
     {
-        device
-            .ll()
-            .pckt_ctrl_6()
-            .write_async(|reg| {
-                reg.set_preamble_len(config.preamble_length);
-                reg.set_sync_len(config.sync_length)
-            })
-            .await?;
+        device.ll().pckt_ctrl_6().write(|reg| {
+            reg.set_preamble_len(config.preamble_length);
+            reg.set_sync_len(config.sync_length)
+        })?;
 
-        device
-            .ll()
-            .pckt_ctrl_4()
-            .write_async(|reg| {
-                reg.set_address_len(config.include_address);
-                reg.set_len_wid(config.packet_length_encoding);
-            })
-            .await?;
+        device.ll().pckt_ctrl_4().write(|reg| {
+            reg.set_address_len(config.include_address);
+            reg.set_len_wid(config.packet_length_encoding);
+        })?;
 
-        device
-            .ll()
-            .pckt_ctrl_3()
-            .write_async(|reg| {
-                reg.set_pckt_frmt(crate::ll::PacketFormat::Basic);
-                reg.set_preamble_sel(config.preamble_pattern as u8);
-            })
-            .await?;
+        device.ll().pckt_ctrl_3().write(|reg| {
+            reg.set_pckt_frmt(crate::ll::PacketFormat::Basic);
+            reg.set_preamble_sel(config.preamble_pattern as u8);
+        })?;
 
         device
             .ll()
             .pckt_ctrl_2()
-            .write_async(|reg| reg.set_fix_var_len(crate::ll::FixVarLen::Variable))
-            .await?;
+            .write(|reg| reg.set_fix_var_len(crate::ll::FixVarLen::Variable))?;
 
-        device
-            .ll()
-            .pckt_ctrl_1()
-            .write_async(|reg| {
-                reg.set_crc_mode(config.crc_mode);
-            })
-            .await?;
+        device.ll().pckt_ctrl_1().write(|reg| {
+            reg.set_crc_mode(config.crc_mode);
+        })?;
 
         device
             .ll()
             .sync()
-            .write_async(|reg| reg.set_value(config.sync_pattern.to_be()))
-            .await?;
+            .write(|reg| reg.set_value(config.sync_pattern.to_be()))?;
 
         device
             .ll()
             .pckt_pstmbl()
-            .write_async(|reg| reg.set_value(config.postamble_length))
-            .await?;
+            .write(|reg| reg.set_value(config.postamble_length))?;
 
-        config.packet_filter.write_to_device(device.ll()).await?;
+        config.packet_filter.write_to_device(device.ll())?;
 
         Ok(())
     }
 
-    async fn setup_packet_send<Spi, Sdn, Gpio, Delay>(
+    fn setup_packet_send<Spi, Sdn, Gpio, Delay>(
         device: &mut S2lp<Ready<Self>, Spi, Sdn, Gpio, Delay>,
         tx_meta_data: &Self::TxMetaData,
         payload_len: usize,
@@ -148,7 +132,7 @@ impl PacketFormat for Basic {
         Gpio: InputPin + Wait,
         Delay: DelayNs,
     {
-        let pckt_ctrl_4 = device.ll().pckt_ctrl_4().read_async().await?;
+        let pckt_ctrl_4 = device.ll().pckt_ctrl_4().read()?;
         let address_included = pckt_ctrl_4.address_len();
         let max_packet_len = match pckt_ctrl_4.len_wid() {
             LenWid::Bytes1 => u8::MAX as u16,
@@ -169,16 +153,14 @@ impl PacketFormat for Basic {
         device
             .ll()
             .pckt_len()
-            .write_async(|reg| reg.set_value(payload_len as u16 + address_included as u16))
-            .await?;
+            .write(|reg| reg.set_value(payload_len as u16 + address_included as u16))?;
 
         // Set the destination address
         if let Some(destination_address) = tx_meta_data.destination_address {
             device
                 .ll()
                 .pckt_flt_goals_3()
-                .write_async(|reg| reg.set_rx_source_addr_or_dual_sync_3(destination_address))
-                .await?;
+                .write(|reg| reg.set_rx_source_addr_or_dual_sync_3(destination_address))?;
         }
 
         Ok(())
@@ -207,14 +189,14 @@ pub struct BasicRxMetaData {
 }
 
 impl RxMetaData for BasicRxMetaData {
-    async fn read_from_device<I: AsyncRegisterInterface<AddressType = u8>>(
+    fn read_from_device<I: RegisterInterface<AddressType = u8>>(
         device: &mut Device<I>,
     ) -> Result<Self, I::Error>
     where
         Self: Sized,
     {
-        let destination_address = if device.pckt_ctrl_4().read_async().await?.address_len() {
-            Some(device.rx_addre_field_0().read_async().await?.value())
+        let destination_address = if device.pckt_ctrl_4().read()?.address_len() {
+            Some(device.rx_addre_field_0().read()?.value())
         } else {
             None
         };
@@ -276,45 +258,32 @@ pub struct PacketFilteringOptions {
 }
 
 impl PacketFilteringOptions {
-    async fn write_to_device<I: AsyncRegisterInterface<AddressType = u8>>(
+    fn write_to_device<I: RegisterInterface<AddressType = u8>>(
         &self,
         device: &mut Device<I>,
     ) -> Result<(), I::Error> {
-        device
-            .pckt_flt_options()
-            .modify_async(|reg| {
-                reg.set_crc_flt(self.discard_bad_crc);
-                reg.set_dest_vs_broadcast_addr(self.broadcast_address.is_some());
-                reg.set_dest_vs_multicast_addr(self.multicast_address.is_some());
-                reg.set_dest_vs_source_addr(self.source_address.is_some());
-            })
-            .await?;
+        device.pckt_flt_options().modify(|reg| {
+            reg.set_crc_flt(self.discard_bad_crc);
+            reg.set_dest_vs_broadcast_addr(self.broadcast_address.is_some());
+            reg.set_dest_vs_multicast_addr(self.multicast_address.is_some());
+            reg.set_dest_vs_source_addr(self.source_address.is_some());
+        })?;
 
-        device
-            .pckt_flt_goals_2()
-            .write_async(|reg| {
-                reg.set_broadcast_addr_or_dual_sync_2(self.broadcast_address.unwrap_or_default())
-            })
-            .await?;
+        device.pckt_flt_goals_2().write(|reg| {
+            reg.set_broadcast_addr_or_dual_sync_2(self.broadcast_address.unwrap_or_default())
+        })?;
 
-        device
-            .pckt_flt_goals_1()
-            .write_async(|reg| {
-                reg.set_multicast_addr_or_dual_sync_1(self.multicast_address.unwrap_or_default())
-            })
-            .await?;
+        device.pckt_flt_goals_1().write(|reg| {
+            reg.set_multicast_addr_or_dual_sync_1(self.multicast_address.unwrap_or_default())
+        })?;
 
-        device
-            .pckt_flt_goals_0()
-            .write_async(|reg| {
-                reg.set_tx_source_addr_or_dual_sync_0(self.source_address.unwrap_or_default())
-            })
-            .await?;
+        device.pckt_flt_goals_0().write(|reg| {
+            reg.set_tx_source_addr_or_dual_sync_0(self.source_address.unwrap_or_default())
+        })?;
 
         device
             .protocol_1()
-            .modify_async(|reg| reg.set_auto_pckt_flt(true))
-            .await?;
+            .modify(|reg| reg.set_auto_pckt_flt(true))?;
 
         Ok(())
     }

@@ -13,37 +13,31 @@ use {defmt_rtt as _, panic_probe as _};
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
-    let Board { s2, .. } = init_board().await;
+    let Board { s2, .. } = init_board();
 
     let s2 = unwrap!(s2.init(Config::default()).await);
 
-    let mut s2 = unwrap!(
-        s2.set_format::<Basic>(&BasicConfig {
-            preamble_length: 128,
-            preamble_pattern: PreamblePattern::Pattern0,
-            sync_length: 32,
-            sync_pattern: 0x12345678,
-            include_address: true,
-            packet_length_encoding: LenWid::Bytes1,
-            postamble_length: 0,
-            crc_mode: CrcMode::CrcPoly0X1021,
-            packet_filter: Default::default(),
-        })
-        .await
-    );
+    let mut s2 = unwrap!(s2.set_format::<Basic>(&BasicConfig {
+        preamble_length: 128,
+        preamble_pattern: PreamblePattern::Pattern0,
+        sync_length: 32,
+        sync_pattern: 0x12345678,
+        include_address: true,
+        packet_length_encoding: LenWid::Bytes1,
+        postamble_length: 0,
+        crc_mode: CrcMode::CrcPoly0X1021,
+        packet_filter: Default::default(),
+    }));
 
     loop {
-        let mut tx_s2 = unwrap!(
-            s2.send_packet(
-                &BasicTxMetaData {
-                    destination_address: Some(0xAA)
-                },
-                b"Hello from Rust!!"
-            )
-            .await
-        );
+        let mut tx_s2 = unwrap!(s2.send_packet(
+            &BasicTxMetaData {
+                destination_address: Some(0xAA)
+            },
+            b"Hello from Rust!!"
+        ));
         let tx_result = unwrap!(tx_s2.wait().await);
-        s2 = unwrap!(tx_s2.finish().await.ok());
+        s2 = unwrap!(tx_s2.finish().ok());
 
         defmt::info!("Packet has been sent! ({})", tx_result);
 

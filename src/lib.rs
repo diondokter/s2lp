@@ -1,8 +1,11 @@
 #![cfg_attr(not(test), no_std)]
 
 use device_driver::embedded_io::ErrorKind;
-use embedded_hal::digital::{InputPin, OutputPin};
-use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
+use embedded_hal::{
+    digital::{InputPin, OutputPin},
+    spi::SpiDevice,
+};
+use embedded_hal_async::{delay::DelayNs, digital::Wait};
 use ll::{Device, DeviceError, DeviceInterface};
 
 pub mod ll;

@@ -10,7 +10,7 @@ use s2lp::states::Shutdown;
 use s2lp::S2lp;
 use {defmt_rtt as _, panic_probe as _};
 
-pub async fn init_board() -> Board {
+pub fn init_board() -> Board {
     defmt::info!("Initializing microcontroller");
 
     // Init the chip

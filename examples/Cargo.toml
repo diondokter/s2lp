@@ -34,5 +34,6 @@ dk = []
 debug = 2
 lto = true
 opt-level = "z"
-overflow-checks = true
+overflow-checks = true # Would be off normally, but we do a lot of math in the driver we should check
 panic = "abort"
+codegen-units = 1

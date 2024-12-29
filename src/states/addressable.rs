@@ -1,5 +1,8 @@
-use embedded_hal::digital::{InputPin, OutputPin};
-use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
+use embedded_hal::{
+    digital::{InputPin, OutputPin},
+    spi::SpiDevice,
+};
+use embedded_hal_async::{delay::DelayNs, digital::Wait};
 
 use crate::{
     ll::{Device, DeviceInterface, GpioMode, GpioSelectInput, GpioSelectOutput},
@@ -37,14 +40,14 @@ where
     /// - You only use output functionality
     ///
     /// The output can also be used as a gpio extender with the VDD and GND states.
-    pub async fn set_gpio_function(
+    pub fn set_gpio_function(
         &mut self,
         number: GpioNumber,
         function: GpioFunction,
     ) -> Result<(), ErrorOf<Self>> {
         self.ll()
             .gpio_conf(number as usize)
-            .write_async(|reg| match function {
+            .write(|reg| match function {
                 GpioFunction::HiZ => {
                     reg.set_gpio_mode(GpioMode::HiZ);
                 }
@@ -60,8 +63,7 @@ where
                     });
                     reg.set_gpio_select_output(select);
                 }
-            })
-            .await?;
+            })?;
 
         Ok(())
     }

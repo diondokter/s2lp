@@ -9,12 +9,12 @@ use {defmt_rtt as _, panic_probe as _};
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
-    let Board { s2, .. } = init_board().await;
+    let Board { s2, .. } = init_board();
 
     let mut s2 = unwrap!(s2.init(Config::default()).await);
 
-    let version = unwrap!(s2.ll().device_info_0().read_async().await).version();
-    let partnum = unwrap!(s2.ll().device_info_1().read_async().await).partnum();
+    let version = unwrap!(s2.ll().device_info_0().read()).version();
+    let partnum = unwrap!(s2.ll().device_info_1().read()).partnum();
 
     defmt::info!("Version: {:X}, partnum: {:X}", version, partnum);
     defmt::assert_eq!(version, 0xC1);
