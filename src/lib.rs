@@ -72,6 +72,7 @@ pub enum Error<SpiError, SdnError, GpioError> {
         name: &'static str,
     },
     BadState,
+    RcoLockError,
 }
 
 impl<SpiError, SdnError, GpioError> From<ErrorKind> for Error<SpiError, SdnError, GpioError> {

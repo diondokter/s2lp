@@ -132,6 +132,13 @@ where
 
         this.state.digital_frequency = digital_frequency;
 
+        // Datasheet 5.7 part 1
+        // The clock divider is now ok, so we can turn the rco calibration on.
+        // Later we must check whether it succeeded.
+        this.ll()
+            .xo_rco_conf_0()
+            .modify(|reg| reg.set_rco_calibration(true))?;
+
         if !is_ch_bw(config.bandwidth, digital_frequency) {
             return Err(Error::BadConfig {
                 reason: "Bandwidth out of range",
@@ -324,6 +331,17 @@ where
                 reg.set_synt(synt);
                 reg.set_pll_cp_isel(cp_isel);
             })?;
+        }
+
+        // Datasheet 5.7 part 2
+        loop {
+            // Wait for the RCO calibration to finish
+            let mc_state_1 = this.ll().mc_state_1().read()?;
+            if mc_state_1.rco_cal_ok() {
+                break;
+            } else if mc_state_1.error_lock() {
+                return Err(Error::RcoLockError);
+            }
         }
 
         #[cfg(feature = "defmt-03")]
