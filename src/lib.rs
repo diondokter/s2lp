@@ -1,4 +1,5 @@
 #![cfg_attr(not(test), no_std)]
+#![allow(clippy::type_complexity)] // Ugh, I know
 
 use device_driver::embedded_io::ErrorKind;
 use embedded_hal::{
