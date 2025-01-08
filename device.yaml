@@ -1237,6 +1237,20 @@ CSMA_CONF1:
       start: 0
       end: 2
       description: Multiplier for the Tcca timer.
+      conversion:
+        name: CcaPeriod
+        Bits64:
+          description: A period of 64 bits
+          value: 0b00
+        Bits128:
+          description: A period of 128 bits
+          value: 0b01
+        Bits256:
+          description: A period of 256 bits
+          value: 0b10
+        Bits512:
+          description: A period of 512 bits
+          value: 0b11
 CSMA_CONF0:
   type: register
   address: 0x4F

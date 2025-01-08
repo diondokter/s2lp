@@ -66,7 +66,7 @@ where
             } else if irq_status.max_re_tx_reach() {
                 TxResult::MaxReTxReached
             } else if irq_status.max_bo_cca_reach() {
-                TxResult::CcaBackoffReached
+                TxResult::MaxBackoffReached
             } else {
                 unreachable!();
             };
@@ -110,8 +110,8 @@ pub enum TxResult {
     FifoError,
     /// The tx retries have reached their maximum. The packet has been sent, but no ack was received.
     MaxReTxReached,
-    /// The Cca engine did not find a good time to send the packet. The packet has not been sent.
-    CcaBackoffReached,
+    /// The Csma/ca engine did not find a good time to send the packet. The packet has not been sent.
+    MaxBackoffReached,
     /// The transmission was already done previously
     TxAlreadyDone,
 }

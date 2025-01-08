@@ -17,6 +17,10 @@ Packet formats:
 - [ ] Uart over air packet format
 - [ ] MBus packet format (?? Not a real packet format, but a combination of settings)
 
+Radio:
+- [x] (G)FSK
+- [ ] ASK/OOK
+
 Packet handler engine:
 - [ ] Payload transmission order
 - [x] Automatic packet filtering

@@ -5,11 +5,62 @@ use embedded_hal::{
 use embedded_hal_async::{delay::DelayNs, digital::Wait};
 
 use crate::{
+    ll::CcaPeriod,
     packet_format::{Basic, PacketFormat, Uninitialized},
     ErrorOf, S2lp,
 };
 
 use super::{rx::RxMode, Ready, Rx, Tx};
+
+impl<Spi, Sdn, Gpio, Delay, PF> S2lp<Ready<PF>, Spi, Sdn, Gpio, Delay>
+where
+    Spi: SpiDevice,
+    Sdn: OutputPin,
+    Gpio: InputPin + Wait,
+    Delay: DelayNs,
+{
+    pub fn set_csma_ca(mode: CsmaCaMode) -> Result<(), ErrorOf<Self>> {
+        todo!()
+    }
+}
+
+pub enum CsmaCaMode {
+    /// No Csma is done
+    Off,
+    /// Csma is done without backoff. The radio will keep scanning the channel until it's free and then send the message.
+    /// This is only aborted if the transmission is aborted.
+    Persistent {
+        /// The length of a cca period
+        cca_period: CcaPeriod,
+        /// The number of consecutive cca periods that must be free for the channel to be deemed free.
+        /// 
+        /// Range: 1..15
+        num_cca_periods: u8,
+    },
+    /// Csma is done with backoffs. When a channel is busy, the radio will go to sleep until it will try again.
+    ///
+    /// Each backoff time is random between 0 and a max value based on the backoff prescaler and the number of backoffs already done.
+    /// For each backoff, the maximum value doubles.
+    ///
+    /// When the number of backoffs reaches the maximum,
+    /// the transmission is aborted with a [TxResult::MaxBackoffReached](crate::states::tx::TxResult::MaxBackoffReached).
+    Backoff {
+        /// The length of a cca period
+        cca_period: CcaPeriod,
+        /// The number of consecutive cca periods that must be free for the channel to be deemed free.
+        /// 
+        /// Range: 1..15
+        num_cca_periods: u8,
+        /// The number of backoffs done before the csma/ca engine gives up and aborts the transmmission.
+        max_backoffs: u8,
+        /// The backoff time is based on the RCO clock (32-34.66khz depending on crystal used) divided by the prescaler.
+        /// 
+        /// Range: 2..=64
+        backoff_prescaler: u8,
+        /// The backoff time is based on a prng. This prng is automatically seeded, unless this custom seed is given.
+        custom_prng_seed: Option<u16>,
+    },
+}
 
 impl<Spi, Sdn, Gpio, Delay> S2lp<Ready<Uninitialized>, Spi, Sdn, Gpio, Delay>
 where
