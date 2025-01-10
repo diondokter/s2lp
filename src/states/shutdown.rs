@@ -5,7 +5,7 @@ use embedded_hal::{
 use embedded_hal_async::{delay::DelayNs, digital::Wait};
 
 use crate::{
-    ll::{Device, DeviceInterface, GpioSelectOutput, State},
+    ll::{Device, DeviceInterface, GpioSelectOutput, SleepModeSel, State},
     packet_format::Uninitialized,
     states::addressable::GpioFunction,
     Error, ErrorOf, GpioNumber, S2lp,
@@ -343,6 +343,11 @@ where
                 return Err(Error::RcoLockError);
             }
         }
+
+        // Retain fifo on sleep. Required for CSMA/CA to work
+        this.ll()
+            .pm_conf_0()
+            .write(|reg| reg.set_sleep_mode_sel(SleepModeSel::WithFifoRetention))?;
 
         #[cfg(feature = "defmt-03")]
         defmt::debug!("Init done!");

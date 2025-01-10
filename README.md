@@ -7,6 +7,7 @@ Operations:
 - [x] Send
 - [x] Receive
 - [ ] Tx power config
+- [ ] Rx sensitivity config
 - [x] Gpio config
 - [ ] Sleep
 
@@ -36,7 +37,7 @@ Link layer protocol:
   - [x] RX Timer
   - [ ] LDC Timer
   - [ ] Sniff Timer
-- [ ] CSMA/CA
+- [x] CSMA/CA
 
 Low level:
 - [x] Register definitions

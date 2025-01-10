@@ -19,8 +19,80 @@ where
     Gpio: InputPin + Wait,
     Delay: DelayNs,
 {
-    pub fn set_csma_ca(mode: CsmaCaMode) -> Result<(), ErrorOf<Self>> {
-        todo!()
+    pub fn set_csma_ca(&mut self, mode: CsmaCaMode) -> Result<(), ErrorOf<Self>> {
+        #[cfg(feature = "defmt-03")]
+        use defmt::assert;
+
+        let seed_reload = match mode {
+            CsmaCaMode::Off => false,
+            CsmaCaMode::Persistent {
+                cca_period,
+                num_cca_periods,
+            } => {
+                assert!(
+                    (1..=15).contains(&num_cca_periods),
+                    "`num_cca_periods` must be in range of 1..=15. Value is: {}",
+                    num_cca_periods
+                );
+
+                self.ll().csma_conf_0().write(|reg| {
+                    reg.set_cca_len(num_cca_periods);
+                    reg.set_nbackoff_max(1); // Not 0 so the max_bo_cca_reach interrupt doesn't fire
+                })?;
+                self.ll().csma_conf_1().write(|reg| {
+                    reg.set_cca_period(cca_period);
+                })?;
+                false
+            }
+            CsmaCaMode::Backoff {
+                cca_period,
+                num_cca_periods,
+                max_backoffs,
+                backoff_prescaler,
+                custom_prng_seed,
+            } => {
+                assert!(
+                    (1..=15).contains(&num_cca_periods),
+                    "`num_cca_periods` must be in range of 1..=15. Value is: {}",
+                    num_cca_periods
+                );
+                assert!(
+                    (2..=64).contains(&backoff_prescaler),
+                    "`backoff_prescaler` must be in range of 2..=64. Value is: {}",
+                    num_cca_periods
+                );
+                assert!(
+                    (0..=7).contains(&max_backoffs),
+                    "`max_backoffs` must be in range of 0..=7. Value is: {}",
+                    max_backoffs
+                );
+
+                self.ll().csma_conf_0().write(|reg| {
+                    reg.set_cca_len(num_cca_periods);
+                    reg.set_nbackoff_max(max_backoffs);
+                })?;
+                self.ll().csma_conf_1().write(|reg| {
+                    reg.set_cca_period(cca_period);
+                    // Prescaler is +1 in the hardware
+                    reg.set_bu_prsc(backoff_prescaler - 1);
+                })?;
+                if let Some(custom_prng_seed) = custom_prng_seed {
+                    self.ll().csma_conf_3().write(|reg| {
+                        // Seed may not be 0
+                        reg.set_bu_cntr_seed(custom_prng_seed.max(1));
+                    })?;
+                }
+                custom_prng_seed.is_some()
+            }
+        };
+
+        self.ll().protocol_1().modify(|reg| {
+            reg.set_csma_on(!mode.is_off());
+            reg.set_csma_pers_on(mode.is_persistent());
+            reg.set_seed_reload(seed_reload);
+        })?;
+
+        Ok(())
     }
 }
 
@@ -33,8 +105,8 @@ pub enum CsmaCaMode {
         /// The length of a cca period
         cca_period: CcaPeriod,
         /// The number of consecutive cca periods that must be free for the channel to be deemed free.
-        /// 
-        /// Range: 1..15
+        ///
+        /// Range: 1..=15
         num_cca_periods: u8,
     },
     /// Csma is done with backoffs. When a channel is busy, the radio will go to sleep until it will try again.
@@ -48,18 +120,38 @@ pub enum CsmaCaMode {
         /// The length of a cca period
         cca_period: CcaPeriod,
         /// The number of consecutive cca periods that must be free for the channel to be deemed free.
-        /// 
-        /// Range: 1..15
+        ///
+        /// Range: 1..=15
         num_cca_periods: u8,
         /// The number of backoffs done before the csma/ca engine gives up and aborts the transmmission.
+        ///
+        /// Range: 0..=7
         max_backoffs: u8,
         /// The backoff time is based on the RCO clock (32-34.66khz depending on crystal used) divided by the prescaler.
-        /// 
+        ///
         /// Range: 2..=64
         backoff_prescaler: u8,
         /// The backoff time is based on a prng. This prng is automatically seeded, unless this custom seed is given.
         custom_prng_seed: Option<u16>,
     },
+}
+
+impl CsmaCaMode {
+    /// Returns `true` if the csma ca mode is [`Off`].
+    ///
+    /// [`Off`]: CsmaCaMode::Off
+    #[must_use]
+    pub fn is_off(&self) -> bool {
+        matches!(self, Self::Off)
+    }
+
+    /// Returns `true` if the csma ca mode is [`Persistent`].
+    ///
+    /// [`Persistent`]: CsmaCaMode::Persistent
+    #[must_use]
+    pub fn is_persistent(&self) -> bool {
+        matches!(self, Self::Persistent { .. })
+    }
 }
 
 impl<Spi, Sdn, Gpio, Delay> S2lp<Ready<Uninitialized>, Spi, Sdn, Gpio, Delay>
@@ -80,10 +172,6 @@ where
     ) -> Result<S2lp<Ready<Format>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
         // Set up the format specific configs
         Format::use_config(&mut self, format_config)?;
-
-        self.ll()
-            .ant_select_conf()
-            .modify(|reg| reg.set_cs_blanking(true))?;
 
         self.ll().pckt_ctrl_3().write(|reg| {
             reg.set_rx_mode(crate::ll::RxMode::Normal);
@@ -137,6 +225,11 @@ where
     ) -> Result<S2lp<Tx<'b, Format>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
         Format::setup_packet_send(&mut self, tx_meta_data, payload.len())?;
 
+        // Must be off to support CSMA/CA
+        self.ll()
+            .ant_select_conf()
+            .modify(|reg| reg.set_cs_blanking(false))?;
+
         // Clear out anything that might still be in the tx fifo
         self.ll().flush_tx_fifo().dispatch()?;
 
@@ -172,6 +265,11 @@ where
     ) -> Result<S2lp<Rx<Basic>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
         let digital_frequency = self.state.digital_frequency;
         mode.write_to_device(self.ll(), digital_frequency)?;
+
+        // Make fifo more reliable
+        self.ll()
+            .ant_select_conf()
+            .modify(|reg| reg.set_cs_blanking(true))?;
 
         // Clear out anything that might still be in the rx fifo
         self.ll().flush_rx_fifo().dispatch()?;

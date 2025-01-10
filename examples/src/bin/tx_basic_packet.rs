@@ -29,6 +29,15 @@ async fn main(_spawner: Spawner) -> ! {
         packet_filter: Default::default(),
     }));
 
+    // Optional CSMA/CA (default is off)
+    unwrap!(s2.set_csma_ca(s2lp::states::ready::CsmaCaMode::Backoff {
+        cca_period: s2lp::ll::CcaPeriod::Bits64,
+        num_cca_periods: 2,
+        max_backoffs: 7,
+        backoff_prescaler: 2,
+        custom_prng_seed: None,
+    }));
+
     loop {
         let mut tx_s2 = unwrap!(s2.send_packet(
             &BasicTxMetaData {

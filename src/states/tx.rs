@@ -9,6 +9,9 @@ use crate::{ll::State, Error, ErrorOf, S2lp};
 
 use super::{Ready, Tx};
 
+#[cfg(feature = "defmt-03")]
+use defmt::unreachable;
+
 impl<'buffer, Spi, Sdn, Gpio, Delay, PF> S2lp<Tx<'buffer, PF>, Spi, Sdn, Gpio, Delay>
 where
     Spi: SpiDevice,
@@ -29,14 +32,23 @@ where
             match select(self.gpio_pin.wait_for_low(), self.delay.delay_ms(1000)).await {
                 Either::First(res) => res.map_err(Error::Gpio)?,
                 Either::Second(()) => {
-                    // Timeout. Check for bad state
+                    // Timeout
+
+                    // Check for bad state
                     let state = self.ll().mc_state_0().read()?.state();
-                    #[cfg(feature = "defmt-03")]
-                    defmt::error!("TX wait timeout out in state: {}", state);
                     match state {
                         Ok(State::Lockst) | Err(_) => return Err(Error::BadState),
                         _ => {}
                     }
+
+                    // Check for persistent CSMA/CA
+                    let protocol1 = self.ll().protocol_1().read()?;
+                    if protocol1.csma_on() && protocol1.csma_pers_on() {
+                        continue;
+                    }
+
+                    #[cfg(feature = "defmt-03")]
+                    defmt::error!("TX wait timeout out in state: {}", state);
                 }
             }
 
@@ -53,7 +65,7 @@ where
                 break Ok(TxResult::FifoError);
             }
 
-            if irq_status.tx_fifo_almost_empty() {
+            if irq_status.tx_fifo_almost_empty() && !self.state.tx_buffer.is_empty() {
                 // Refill the fifo
                 let written = self.device.fifo().write(self.state.tx_buffer)?;
                 self.state.tx_buffer = &self.state.tx_buffer[written..];
