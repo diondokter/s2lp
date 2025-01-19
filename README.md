@@ -1,5 +1,7 @@
 # Rust driver for the S2-LP
 
+Parts of this driver have been translated from/inspired by the official ST driver.
+
 ## Features:
 
 Operations:
