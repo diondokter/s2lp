@@ -15,8 +15,8 @@ pub mod states;
 
 /// The main driver struct of the crate representing the S2-LP radio
 #[derive(Debug)]
-pub struct S2lp<State, Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait, Delay: DelayNs> {
-    device: Device<DeviceInterface<Spi>>,
+pub struct S2lp<State, Spi, Sdn: OutputPin, Gpio: InputPin + Wait, Delay: DelayNs> {
+    device: Option<Device<DeviceInterface<Spi>>>,
     shutdown_pin: Sdn,
     gpio_pin: Gpio,
     gpio_number: GpioNumber,
@@ -38,6 +38,39 @@ impl<State, Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait, Delay: DelayN
             gpio_number: self.gpio_number,
             delay: self.delay,
             state: next_state,
+        }
+    }
+}
+
+impl<State, Spi: SpiDevice, Sdn: OutputPin, Gpio: InputPin + Wait, Delay: DelayNs>
+    S2lp<State, Spi, Sdn, Gpio, Delay>
+{
+    pub fn take_spi(self) -> (S2lp<State, (), Sdn, Gpio, Delay>, Spi) {
+        (
+            S2lp {
+                device: None,
+                shutdown_pin: self.shutdown_pin,
+                gpio_pin: self.gpio_pin,
+                gpio_number: self.gpio_number,
+                delay: self.delay,
+                state: self.state,
+            },
+            self.device.unwrap().interface.spi,
+        )
+    }
+}
+
+impl<State, Sdn: OutputPin, Gpio: InputPin + Wait, Delay: DelayNs>
+    S2lp<State, (), Sdn, Gpio, Delay>
+{
+    pub fn give_spi<Spi: SpiDevice>(self, spi: Spi) -> S2lp<State, Spi, Sdn, Gpio, Delay> {
+        S2lp {
+            device: Some(Device::new(DeviceInterface::new(spi))),
+            shutdown_pin: self.shutdown_pin,
+            gpio_pin: self.gpio_pin,
+            gpio_number: self.gpio_number,
+            delay: self.delay,
+            state: self.state,
         }
     }
 }

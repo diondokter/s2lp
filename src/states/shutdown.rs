@@ -36,7 +36,7 @@ where
         delay: Delay,
     ) -> Self {
         Self {
-            device: Device::new(DeviceInterface::new(spi)),
+            device: Some(Device::new(DeviceInterface::new(spi))),
             shutdown_pin,
             gpio_pin,
             gpio_number,
@@ -83,14 +83,14 @@ where
             self.delay.delay_ms(2).await;
         }
 
+        let mut this = self.cast_state(Ready::new(0));
+
         #[cfg(feature = "defmt-03")]
         defmt::trace!("Checking interface works");
-        let version = self.device.device_info_0().read()?.version();
+        let version = this.ll().device_info_0().read()?.version();
         if version != 0xC1 {
             return Err(Error::Init);
         }
-
-        let mut this = self.cast_state(Ready::new(0));
 
         #[cfg(feature = "defmt-03")]
         defmt::trace!("Setting correct radio config");

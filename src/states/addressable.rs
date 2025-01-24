@@ -25,7 +25,7 @@ where
     /// Warning: The driver makes assumptions about the state of the device.
     /// Changing registers directly may break the driver. So be careful.
     pub fn ll(&mut self) -> &mut Device<DeviceInterface<Spi>> {
-        &mut self.device
+        self.device.as_mut().unwrap()
     }
 
     /// Set the function of a gpio pin.

@@ -7,10 +7,10 @@ use embedded_hal_async::{delay::DelayNs, digital::Wait};
 use crate::{
     ll::CcaPeriod,
     packet_format::{Basic, PacketFormat, Uninitialized},
-    ErrorOf, S2lp,
+    Error, ErrorOf, S2lp,
 };
 
-use super::{rx::RxMode, Ready, Rx, Tx};
+use super::{rx::RxMode, Ready, Rx, Shutdown, Tx};
 
 impl<Spi, Sdn, Gpio, Delay, PF> S2lp<Ready<PF>, Spi, Sdn, Gpio, Delay>
 where
@@ -93,6 +93,11 @@ where
         })?;
 
         Ok(())
+    }
+
+    pub fn shutdown(mut self) -> Result<S2lp<Shutdown, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
+        self.shutdown_pin.set_high().map_err(|e| Error::Sdn(e))?;
+        Ok(self.cast_state(Shutdown))
     }
 }
 

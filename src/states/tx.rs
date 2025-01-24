@@ -67,7 +67,12 @@ where
 
             if irq_status.tx_fifo_almost_empty() && !self.state.tx_buffer.is_empty() {
                 // Refill the fifo
-                let written = self.device.fifo().write(self.state.tx_buffer)?;
+                let written = self
+                    .device
+                    .as_mut()
+                    .unwrap()
+                    .fifo()
+                    .write(self.state.tx_buffer)?;
                 self.state.tx_buffer = &self.state.tx_buffer[written..];
 
                 continue;

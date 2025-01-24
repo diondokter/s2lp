@@ -10,7 +10,7 @@ device_driver::create_device!(
 /// The SPI wrapper interface to the driver
 #[derive(Debug)]
 pub struct DeviceInterface<Spi> {
-    spi: Spi,
+    pub(crate) spi: Spi,
 }
 
 impl<Spi> DeviceInterface<Spi> {

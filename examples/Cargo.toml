@@ -6,29 +6,30 @@ license = "MIT OR Apache-2.0"
 default-run = "rx_basic_packet"
 
 [dependencies]
-embassy-stm32 = { version = "0.1.0", features = [ "defmt", "time-driver-any", "stm32u083rc", "memory-x", "unstable-pac", "exti", "chrono"]  }
-embassy-executor = { version = "0.6.3", features = ["arch-cortex-m", "executor-thread", "defmt"] }
-embassy-time = { version = "0.3.2", features = ["defmt", "defmt-timestamp-uptime", "tick-hz-32_768"] }
+embassy-stm32 = { version = "0.2.0", features = [ "defmt", "time-driver-any", "stm32u083rc", "memory-x", "unstable-pac", "exti", "chrono"]  }
+embassy-executor = { version = "0.7.0", features = ["arch-cortex-m", "executor-thread", "defmt"] }
+embassy-time = { version = "0.4.0", features = ["defmt", "defmt-timestamp-uptime", "tick-hz-32_768"] }
 
 defmt = "0.3.10"
 defmt-rtt = "0.4.1"
 
 cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7.5"
-embedded-hal-bus = { version = "0.2.0", features = ["async", "defmt-03"] }
+embedded-hal-bus = { version = "0.3.0", features = ["async", "defmt-03"] }
 panic-probe = { version = "0.3.2", features = ["print-defmt"] }
 
 s2lp = { path = "../", features = ["defmt-03"] }
 portable-atomic = { version = "1.10.0", default-features = false, features = ["unsafe-assume-single-core"] }
-
-[patch.crates-io]
-embassy-stm32 = { git = "https://github.com/embassy-rs/embassy.git", rev = "2ba7faf" }
-embassy-executor = { git = "https://github.com/embassy-rs/embassy.git", rev = "2ba7faf" }
-embassy-time = { git = "https://github.com/embassy-rs/embassy.git", rev = "2ba7faf" }
+static_cell = "2.1.0"
 
 [features]
 # Target the discovery kit instead of the nucleo
 dk = []
+low-power = ["embassy-stm32/low-power"]
+
+[[bin]]
+name = "lp_rx"
+required-features = ["low-power"]
 
 [profile.release]
 debug = 2

@@ -15,6 +15,19 @@ use super::{Ready, Rx};
 
 impl<'buffer, Spi, Sdn, Gpio, Delay, PF: PacketFormat> S2lp<Rx<'buffer, PF>, Spi, Sdn, Gpio, Delay>
 where
+    Sdn: OutputPin,
+    Gpio: InputPin + Wait,
+    Delay: DelayNs,
+{
+    /// Just waits for the interrupt without acting on it. This is cancel-safe.
+    pub async fn wait_for_irq(&mut self) -> Result<(), Error<(), Sdn::Error, Gpio::Error>> {
+        self.gpio_pin.wait_for_low().await.map_err(Error::Gpio)?;
+        Ok(())
+    }
+}
+
+impl<'buffer, Spi, Sdn, Gpio, Delay, PF: PacketFormat> S2lp<Rx<'buffer, PF>, Spi, Sdn, Gpio, Delay>
+where
     Spi: SpiDevice,
     Sdn: OutputPin,
     Gpio: InputPin + Wait,
@@ -42,8 +55,8 @@ where
                 || irq_status.rx_fifo_error()
                 || self.state.written == self.state.rx_buffer.len()
             {
-                self.device.abort().dispatch()?;
-                self.device.flush_rx_fifo().dispatch()?;
+                self.ll().abort().dispatch()?;
+                self.ll().flush_rx_fifo().dispatch()?;
                 self.state.rx_done = true;
 
                 if self.state.written == self.state.rx_buffer.len() {
@@ -64,6 +77,8 @@ where
             if irq_status.rx_data_ready() || irq_status.rx_fifo_almost_full() {
                 let received = self
                     .device
+                    .as_mut()
+                    .unwrap()
                     .fifo()
                     .read(&mut self.state.rx_buffer[self.state.written..])?;
                 self.state.written += received;
@@ -81,8 +96,8 @@ where
                 self.state.rx_done = true;
                 return Ok(RxResult::Ok {
                     packet_size: self.state.written,
-                    rssi_value: self.device.rssi_level().read()?.value() as i16 - 146,
-                    meta_data: PF::RxMetaData::read_from_device(&mut self.device)?,
+                    rssi_value: self.ll().rssi_level().read()?.value() as i16 - 146,
+                    meta_data: PF::RxMetaData::read_from_device(self.ll())?,
                 });
             }
         }
