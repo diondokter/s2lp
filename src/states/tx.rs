@@ -12,7 +12,7 @@ use super::{Ready, Tx};
 #[cfg(feature = "defmt-03")]
 use defmt::unreachable;
 
-impl<'buffer, Spi, Sdn, Gpio, Delay, PF> S2lp<Tx<'buffer, PF>, Spi, Sdn, Gpio, Delay>
+impl<Spi, Sdn, Gpio, Delay, PF> S2lp<Tx<'_, PF>, Spi, Sdn, Gpio, Delay>
 where
     Spi: SpiDevice,
     Sdn: OutputPin,

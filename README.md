@@ -11,7 +11,7 @@ Operations:
 - [ ] Tx power config
 - [ ] Rx sensitivity config
 - [x] Gpio config
-- [ ] Sleep
+- [x] Standby
 
 Packet formats:
 - [x] Basic packet format

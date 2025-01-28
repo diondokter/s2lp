@@ -13,7 +13,7 @@ use crate::{
 
 use super::{Ready, Rx};
 
-impl<'buffer, Spi, Sdn, Gpio, Delay, PF: PacketFormat> S2lp<Rx<'buffer, PF>, Spi, Sdn, Gpio, Delay>
+impl<Spi, Sdn, Gpio, Delay, PF: PacketFormat> S2lp<Rx<'_, PF>, Spi, Sdn, Gpio, Delay>
 where
     Sdn: OutputPin,
     Gpio: InputPin + Wait,
@@ -26,7 +26,7 @@ where
     }
 }
 
-impl<'buffer, Spi, Sdn, Gpio, Delay, PF: PacketFormat> S2lp<Rx<'buffer, PF>, Spi, Sdn, Gpio, Delay>
+impl<Spi, Sdn, Gpio, Delay, PF: PacketFormat> S2lp<Rx<'_, PF>, Spi, Sdn, Gpio, Delay>
 where
     Spi: SpiDevice,
     Sdn: OutputPin,

@@ -1,3 +1,5 @@
+use core::marker::PhantomData;
+
 use embedded_hal::{
     digital::{InputPin, OutputPin},
     spi::SpiDevice,
@@ -10,7 +12,7 @@ use crate::{
     Error, ErrorOf, S2lp,
 };
 
-use super::{rx::RxMode, Ready, Rx, Shutdown, Tx};
+use super::{rx::RxMode, Ready, Rx, Shutdown, Standby, Tx};
 
 impl<Spi, Sdn, Gpio, Delay, PF> S2lp<Ready<PF>, Spi, Sdn, Gpio, Delay>
 where
@@ -19,6 +21,7 @@ where
     Gpio: InputPin + Wait,
     Delay: DelayNs,
 {
+    /// Set the CSMA/CA mode used for sending packets.
     pub fn set_csma_ca(&mut self, mode: CsmaCaMode) -> Result<(), ErrorOf<Self>> {
         #[cfg(feature = "defmt-03")]
         use defmt::assert;
@@ -95,9 +98,25 @@ where
         Ok(())
     }
 
+    /// Put the radio in shutdown mode using the shutdown pin. This is the lowest possible power state.
+    ///
+    /// The radio can be booted again by going through the init procedure.
+    /// This is necessary because the radio 'forgets' everything in shutdown mode.
     pub fn shutdown(mut self) -> Result<S2lp<Shutdown, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
-        self.shutdown_pin.set_high().map_err(|e| Error::Sdn(e))?;
+        self.shutdown_pin.set_high().map_err(Error::Sdn)?;
         Ok(self.cast_state(Shutdown))
+    }
+
+    /// Put the radio in standby mode. The radio won't do anything, but it saves a lot of power.
+    ///
+    /// The radio can be woken up again into the Ready state.
+    pub fn standby(mut self) -> Result<S2lp<Standby<PF>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
+        self.ll().standby().dispatch()?;
+        let digital_frequency = self.state.digital_frequency;
+        Ok(self.cast_state(Standby {
+            digital_frequency,
+            _p: PhantomData,
+        }))
     }
 }
 
