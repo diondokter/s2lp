@@ -69,13 +69,23 @@ where
     }
 }
 
+/// The function of a gpio pin
 pub enum GpioFunction {
+    /// Pin configured as nothing, floating
     HiZ,
+    /// Pin configured as input
     Input {
+        /// The input function the pin will take
         select: GpioSelectInput,
     },
+    /// Pin configured as output
     Output {
+        /// If true, the pin is set to high power mode.
+        /// This gives faster rise and fall times and allows a higher current draw and sink.
+        ///
+        /// See the `Digital interface specification` in the datasheet.
         high_power: bool,
+        /// The output function the pin will take
         select: GpioSelectOutput,
     },
 }

@@ -369,6 +369,7 @@ pub struct Config {
     /// - High band (860 MHz - 940 MHz)
     /// - Middle band (430 MHz - 470 MHz)
     pub base_frequency: u32,
+    /// The modulation the radio will use
     pub modulation: ModulationType,
     /// The datarate used in bps (100 bps - 500 kbps)
     pub datarate: u32,

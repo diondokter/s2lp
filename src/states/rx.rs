@@ -124,13 +124,17 @@ where
     }
 }
 
+/// The result of an RX operation. This tells the reason why the operation stopped.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
 pub enum RxResult<MetaData> {
     /// All went fine and the packet is received
     Ok {
+        /// The size of the received packet in bytes
         packet_size: usize,
+        /// The RSSI value in dB
         rssi_value: i16,
+        /// Format-specific metadata like addresses
         meta_data: MetaData,
     },
     /// The reception was already done previously
@@ -147,12 +151,22 @@ pub enum RxResult<MetaData> {
     Timeout,
 }
 
+/// The mode of receiving
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
 pub enum RxMode {
-    Normal { timeout: Option<RxTimeout> },
-    LowDutyCycle { timeout: RxTimeout },
-    Sniff { timeout: RxTimeout },
+    /// Normal, default, receiving where the receiver will just be on
+    Normal {
+        /// If some, the receiving will stop after the configured time.
+        /// If none, the receiver will stay on until a packet has been received or the operation is aborted.
+        timeout: Option<RxTimeout>,
+    },
+    LowDutyCycle {
+        timeout: RxTimeout,
+    },
+    Sniff {
+        timeout: RxTimeout,
+    },
 }
 
 impl Default for RxMode {
@@ -188,11 +202,13 @@ impl RxMode {
     }
 }
 
+/// Timeout settings for the receiver
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
 pub struct RxTimeout {
     /// The amount of time after which the RX timer timeout happens
     pub timeout_us: u32,
+    /// A mask to prevent the timout from aborting the RX
     pub mask: RxTimeoutMask,
 }
 
@@ -234,6 +250,7 @@ impl RxTimeout {
     }
 }
 
+/// The mask for the RX timer. It can prevent the timer from expiring in situations where it's not desired.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
 #[repr(u8)]

@@ -1,6 +1,9 @@
 #![cfg_attr(not(test), no_std)]
 #![allow(clippy::type_complexity)] // Ugh, I know
 
+//! Driver for the S2-LP radio chip from ST.
+//! Built fully in Rust, uses [embedded_hal] and [device_driver].
+
 use device_driver::embedded_io::ErrorKind;
 use embedded_hal::{
     digital::{InputPin, OutputPin},

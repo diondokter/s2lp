@@ -1,3 +1,5 @@
+//! Definition of the various type states
+
 use core::marker::PhantomData;
 
 pub mod addressable;
@@ -7,13 +9,15 @@ pub mod shutdown;
 pub mod standby;
 pub mod tx;
 
+/// The radio is in shutdown mode. This is the lowest power state and the radio is effectively turned off.
 pub struct Shutdown;
+/// The radio is in standby mode. This is the lowest power state where the radio is still active.
 pub struct Standby<PF: ?Sized> {
     /// The internal `fdig` of the radio
     digital_frequency: u32,
     _p: PhantomData<PF>,
 }
-
+/// The radio is in ready mode. From here the radio can start sending and receiving packets.
 pub struct Ready<PF: ?Sized> {
     /// The internal `fdig` of the radio
     digital_frequency: u32,
@@ -29,6 +33,7 @@ impl<PF> Ready<PF> {
     }
 }
 
+/// The radio is in send mode. A packet is being sent or has just been sent
 pub struct Tx<'buffer, PF> {
     /// The internal `fdig` of the radio
     digital_frequency: u32,
@@ -38,7 +43,7 @@ pub struct Tx<'buffer, PF> {
 }
 
 impl<'buffer, PF> Tx<'buffer, PF> {
-    pub fn new(digital_frequency: u32, tx_buffer: &'buffer [u8]) -> Self {
+    fn new(digital_frequency: u32, tx_buffer: &'buffer [u8]) -> Self {
         Self {
             digital_frequency,
             tx_buffer,
@@ -48,6 +53,7 @@ impl<'buffer, PF> Tx<'buffer, PF> {
     }
 }
 
+/// The radio is in receive mode. The receiver is currently on, or a packet is has been received and is ready to be read out
 pub struct Rx<'buffer, PF> {
     /// The internal `fdig` of the radio
     digital_frequency: u32,
@@ -58,7 +64,7 @@ pub struct Rx<'buffer, PF> {
 }
 
 impl<'buffer, PF> Rx<'buffer, PF> {
-    pub fn new(digital_frequency: u32, rx_buffer: &'buffer mut [u8]) -> Self {
+    fn new(digital_frequency: u32, rx_buffer: &'buffer mut [u8]) -> Self {
         Self {
             digital_frequency,
             rx_buffer,
