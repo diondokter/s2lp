@@ -123,6 +123,8 @@ impl PacketFormat for Basic {
 }
 
 /// Configuration for the Basic packet format
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
 pub struct BasicConfig {
     pub preamble_length: u16, // 0-2046
     pub preamble_pattern: PreamblePattern,
@@ -136,7 +138,7 @@ pub struct BasicConfig {
 }
 
 /// Receiver metadata for the Basic packet format
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
 pub struct BasicRxMetaData {
     /// The received packet destination address (if any)
@@ -163,7 +165,7 @@ impl RxMetaData for BasicRxMetaData {
 }
 
 /// Transmission metadata for the Basic packet format
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
 pub struct BasicTxMetaData {
     /// The destination address of the packet (if any)

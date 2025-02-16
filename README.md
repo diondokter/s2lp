@@ -16,7 +16,7 @@ Operations:
 Packet formats:
 - [x] Basic packet format
 - [ ] STack packet format
-- [ ] IEEE 802.15.4 packet format
+- [x] IEEE 802.15.4g packet format
 - [ ] Uart over air packet format
 - [ ] MBus packet format (?? Not a real packet format, but a combination of settings)
 
@@ -29,7 +29,6 @@ Packet handler engine:
 - [x] Automatic packet filtering
 - [ ] Data coding and integrity check
 - [x] CRC
-- [ ] Data whitening
 
 Link layer protocol:
 - [ ] Auto acknowledgement

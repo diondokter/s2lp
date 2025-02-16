@@ -13,6 +13,8 @@ use crate::{ll::Device, states::Ready, ErrorOf, S2lp};
 
 mod basic;
 pub use basic::*;
+mod ieee802154g;
+pub use ieee802154g::*;
 
 /// No packet format has been configured yet
 pub struct Uninitialized;
@@ -86,6 +88,8 @@ pub enum PreamblePattern {
 ///
 /// If none of the address filters are set, then no filtering will be done on the address and
 /// all packets will be received.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt-03", derive(defmt::Format))]
 pub struct PacketFilteringOptions {
     /// If true, packets with a bad CRC will be filtered out.
     /// Ignored if no CRC is enabled.

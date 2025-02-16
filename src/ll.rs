@@ -174,6 +174,19 @@ impl<Spi> core::ops::DerefMut for DeviceError<Spi> {
     }
 }
 
+impl CrcMode {
+    pub fn num_bytes(&self) -> usize {
+        match self {
+            CrcMode::NoCrc => 0,
+            CrcMode::CrcPoly0X07 => 1,
+            CrcMode::CrcPoly0X8005 => 2,
+            CrcMode::CrcPoly0X1021 => 2,
+            CrcMode::CrcPoly0X864Cbf => 3,
+            CrcMode::CrcPoly0X04C011Bb7 => 4,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
