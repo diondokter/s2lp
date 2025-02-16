@@ -168,9 +168,9 @@ pub struct LpSpi {
 }
 
 impl LpSpi {
-    pub fn get_spi<'s>(
-        &'s mut self,
-    ) -> ExclusiveDevice<Spi<'s, Async>, Output<'s>, embassy_time::Delay> {
+    pub fn get_spi(
+        &mut self,
+    ) -> ExclusiveDevice<Spi<'_, Async>, Output<'_>, embassy_time::Delay> {
         ExclusiveDevice::new(
             Spi::new(
                 &mut self.peri,

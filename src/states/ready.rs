@@ -8,7 +8,7 @@ use embedded_hal_async::{delay::DelayNs, digital::Wait};
 
 use crate::{
     ll::CcaPeriod,
-    packet_format::{Basic, PacketFormat, Uninitialized},
+    packet_format::{PacketFormat, Uninitialized},
     Error, ErrorOf, S2lp,
 };
 
@@ -286,7 +286,7 @@ where
         mut self,
         buffer: &mut [u8],
         mode: RxMode,
-    ) -> Result<S2lp<Rx<Basic>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
+    ) -> Result<S2lp<Rx<Format>, Spi, Sdn, Gpio, Delay>, ErrorOf<Self>> {
         let digital_frequency = self.state.digital_frequency;
         mode.write_to_device(self.ll(), digital_frequency)?;
 
