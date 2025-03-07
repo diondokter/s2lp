@@ -126,8 +126,8 @@ where
         Ok(self.cast_state(Ready::new(digital_frequency)))
     }
 
-    /// Finish the transmission. This only returns ok when the [Self::wait] function has returned.
-    /// If you need to stop the transmission before it's done, call [Self::abort].
+    /// Finish the reception. This only returns ok when the [Self::wait] function has returned.
+    /// If you need to stop the reception before it's done, call [Self::abort].
     pub fn finish(self) -> Result<S2lp<Ready<PF>, Spi, Sdn, Gpio, Delay>, Self> {
         if self.state.rx_done {
             let digital_frequency = self.state.digital_frequency;
