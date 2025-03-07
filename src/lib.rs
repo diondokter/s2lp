@@ -4,6 +4,7 @@
 //! Driver for the S2-LP radio chip from ST.
 //! Built fully in Rust, uses [embedded_hal] and [device_driver].
 
+use core::fmt::Debug;
 use device_driver::embedded_io::ErrorKind;
 use embedded_hal::{
     digital::{InputPin, OutputPin},
@@ -132,6 +133,19 @@ impl<SpiError, SdnError, GpioError, T> From<device_driver::ConversionError<T>>
     fn from(val: device_driver::ConversionError<T>) -> Self {
         Self::ConversionError { name: val.target }
     }
+}
+
+impl<SpiError: Debug, SdnError: Debug, GpioError: Debug> core::fmt::Display
+    for Error<SpiError, SdnError, GpioError>
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{self:?}")
+    }
+}
+
+impl<SpiError: Debug, SdnError: Debug, GpioError: Debug> core::error::Error
+    for Error<SpiError, SdnError, GpioError>
+{
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
