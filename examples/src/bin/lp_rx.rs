@@ -60,7 +60,7 @@ async fn async_main(_spawner: Spawner) -> ! {
         let rx_s2 = unwrap!(s2.start_receive(&mut buf, Default::default()));
 
         let (mut rx_s2_no_spi, _) = rx_s2.take_spi();
-        unwrap!(rx_s2_no_spi.wait_for_irq().await);
+        unwrap!(rx_s2_no_spi.wait_for_irq_no_spi().await);
         let mut rx_s2 = rx_s2_no_spi.give_spi(spi.get_spi());
 
         let rx_result = unwrap!(rx_s2.wait().await);

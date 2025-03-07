@@ -13,14 +13,28 @@ use crate::{
 
 use super::{Ready, Rx};
 
-impl<Spi, Sdn, Gpio, Delay, PF: PacketFormat> S2lp<Rx<'_, PF>, Spi, Sdn, Gpio, Delay>
+impl<Sdn, Gpio, Delay, PF: PacketFormat> S2lp<Rx<'_, PF>, (), Sdn, Gpio, Delay>
 where
     Sdn: OutputPin,
     Gpio: InputPin + Wait,
     Delay: DelayNs,
 {
     /// Just waits for the interrupt without acting on it. This is cancel-safe.
-    pub async fn wait_for_irq(&mut self) -> Result<(), Error<(), Sdn::Error, Gpio::Error>> {
+    pub async fn wait_for_irq_no_spi(&mut self) -> Result<(), Error<(), Sdn::Error, Gpio::Error>> {
+        self.gpio_pin.wait_for_low().await.map_err(Error::Gpio)?;
+        Ok(())
+    }
+}
+
+impl<Spi, Sdn, Gpio, Delay, PF: PacketFormat> S2lp<Rx<'_, PF>, Spi, Sdn, Gpio, Delay>
+where
+    Spi: SpiDevice,
+    Sdn: OutputPin,
+    Gpio: InputPin + Wait,
+    Delay: DelayNs,
+{
+    /// Just waits for the interrupt without acting on it. This is cancel-safe.
+    pub async fn wait_for_irq(&mut self) -> Result<(), Error<Spi::Error, Sdn::Error, Gpio::Error>> {
         self.gpio_pin.wait_for_low().await.map_err(Error::Gpio)?;
         Ok(())
     }
